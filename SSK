@@ -1,0 +1,4299 @@
+var ViewerManager_version = "6433";
+var ViewerManager_release_version = "5.1.102.201";
+"use strict";
+var PARAM = {
+    url_ImageFileName: "",
+    NumberOfPages: 172,
+    num_VisiblePage: 1,
+    ResizePercentage: 3,
+    ResizeOption: 0,
+    ServerSupportMultiPage: true,
+    ViewerWidth: 600,
+    ViewerHeight: 500,
+    URL_Annotation: "",
+    URL_StampINIPath: "",
+    URL_ImageStampFile: "",
+    CroppedImageSize: 15,
+    IsAnnotationBurningRequired: false,
+    DynamicZoneThickness: 1,
+    CropOption: 1,
+    cropImageMinQuality: 0.1,
+    url_WriteAnnotation: "",
+    CurrentUserName: "default",
+    AnnotationDisplay: true,
+    printOption: true,
+    DisablePrintOption: false,
+    PrintParameter: 0,
+    watermarkPrinting: 5,
+    InitialZoomLensStatus: false,
+    InitialZoomLensPercentage: 25,
+    IsZoomWindowChangeRequired: true,
+    ZoomLensForZoning: "200,200,1,true",
+    ShowUsernamesWithAllAnnotation: true,
+    TextWaterMarkPosition: 1,
+    TextAsWaterMark: "",
+    Watermark_Properties: "",
+    DateTimeFormat: 0,
+    color_ViewerCanvas: 10724259,
+    RetainViewSettings: true,
+    BrightnessOption: true,
+    TransformOption: 0,
+    DynamicHideNShowToolBar: 0,
+    StampWithoutINI: false,
+    AnnotationOption: 0,
+    URL_saveImageTransformations: "",
+    IsZoomLensDisable: false,
+    MenuBar: false,
+    annotToolbar_Alignment: "west",
+    localeDirection: "ltr",
+    URL_Notes: "",
+    URL_HelpFile: "",
+    DefaultFontSettings: "",
+    DynamicText: "",
+    SetPropertyDialogItem: "",
+    URL_passwordStamp: "",
+    HyperlinkAnnotation: true,
+    PenThickness: 1,
+    AnnotationColor: "255",
+    URL_SecureAnnotations: "",
+    num_RotateOption: 0,
+    url_config_propertyfile: "",
+    url_i18n_propertyfile: "",
+    StampServletURL: "",
+    DisplayScrollOnResize: false,
+    RequestMethod: "GET",
+    OpenFileOption: false,
+    isTextSelectable: true,
+    URL_ConvertToPDF: "",
+    DocumentData: "",
+    bPrintDateTime: true,
+    bPrintUnsavedAnnotation: true,
+    printApproach: 1,
+    bSaveAnnotationDialog: true,
+    bCenterAlign: true,
+    bHoverToolbar: false,
+    bValidateURLContext: true,
+    toolbarVersion: 1,
+    theme: {
+        id: 1
+    },
+    bOrientationCorrectivePrinting: false,
+    autoSaveAnnotation: 1,
+    pageSetupIE: {
+        page_size: "A4",
+        margin_left: "0.0",
+        margin_top: "0.0",
+        margin_right: "0.0",
+        margin_bottom: "0.0",
+        bheader: false,
+        bfooter: false,
+        benable_shrink: true,
+        bEnablePrintMargins: false,
+        bEnableIEonly: false
+    },
+    RetainAngleSettings: false,
+    printWinVersion: "",
+    hideRegion: {
+        regions: [],
+        color: "0"
+    },
+    bDisableDragAndDrop: true,
+    bPrintWaterMarkOnCanvas: false,
+    bViewWaterMark: false,
+    resizeExMaxZoomLimit: -100,
+    resizeExMaxPixelLimit: 10000000,
+    bDisableLoadingBanner: false,
+    maxDisplayPixelLimit: false,
+    bEnableSearchOption: false,
+    bLocalFileMultipartSupport: false,
+    bEnableAddBookmark: false,
+    urlRequestHeaderData: {}
+};
+var PAGE_DISPLAY_STATUS = {
+    SUCCESS: 1,
+    ERROR_ANNOT_FETCH: -1001,
+    ERROR_DOC_NOTPDF: -1002,
+    ERROR_DOC_NULLDATA: -1003,
+    ERROR_DOC_NULLPASSWORD: -1004,
+    ERROR_DOC_NULLURL: -1005,
+    ERROR_DOC_LOAD: -1006
+};
+var CONSTANTS = {
+    EXT_ZONE_SOLID_RECT: 1,
+    EXT_ZONE_HIGHLIGHT: 2,
+    EXT_ZONE_OPAQUE: 3,
+    EXT_ZONE_DASH: 4,
+    EXT_ZONE_MAXIMUM_SCROLL: 2,
+    EXT_ZONE_CENTER_SCROLL: 1,
+    FAILURE: -1,
+    MAX_USERNAME_LENGTH: 64
+};
+var ANNOTATION_GROUP_CONSTANTS = {
+    ANNOTATION_GROUP_ADD: 0,
+    ANNOTATION_GROUP_DELETE: 1,
+    ANNOTATION_GROUP_SELECT: 2
+};
+var VIEWER_MANAGER = null;
+var RESIZE_PERCENTAGES = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000, 1025, 1050, 1075, 1100, 1125, 1150, 1175, 1200, 1225, 1250, 1275, 1300, 1325, 1350, 1375, 1400, 1425, 1450, 1475, 1500, 1525, 1550, 1575, 1600];
+var RESIZE_OPTIONS = ["", "FitToPage", "FitToWidth", "FitToHeight", "ScanResolution"];
+var enumZoomLevels = {
+    dvZoom25: 0,
+    dvZoom50: 1,
+    dvZoom75: 2,
+    dvZoom100: 3,
+    dvZoom125: 4,
+    dvZoom150: 5,
+    dvZoom175: 6,
+    dvZoom200: 7,
+    dvFitPage: 8,
+    dvFitWidth: 9,
+    dvFitHeight: 10,
+    dvZoomScanDPI: 11,
+    dvZoomCustom: 12
+};
+var IMAGE_OPERATION = {
+    IMAGE_ROTATED_RIGHT: 1,
+    IMAGE_ROTATED_LEFT: 2,
+    IMAGE_ROTATED_180: 3,
+    IMAGE_NEGATED: 4,
+    IMAGE_FLIPPED_HORIZONTALLY: 5,
+    IMAGE_FLIPPED_VERTICALLY: 6,
+    IMAGE_DESKEW: 7
+};
+var OPERATION_TYPE = {
+    ADD_NEW_ANNOTATION: "ADD_NEW_ANNOTATION",
+    MOVE_ANNOTATION: "MOVE_ANNOTATION",
+    RESIZE_ANNOTATION: "RESIZE_ANNOTATION",
+    DELETE_ANNOTATION: "DELETE_ANNOTATION",
+    PROPERTIES_CHANGE: "PROPERTIES_CHANGE",
+    CUT_ANNOTATION: "CUT_ANNOTATION",
+    PASTE_ANNOTATION: "PASTE_ANNOTATION"
+};
+var SHORTCUT_STYLE = {
+    OPEN_SPAN: "<span class='menu_shortcut'>&nbsp;&nbsp;",
+    CLOSE_SPAN: "</span>"
+};
+var SHORTCUT_STYLE_LEFT = {
+    OPEN_SPAN: "<span class='menu_shortcut_left'>",
+    CLOSE_SPAN: "</span>"
+};
+var bDialogOpen = false;
+var dialogOpened = [];
+var menuItemsWithNoPointerEvents;
+var toolbarItemsWithNoPointerEvents;
+var annotationToolbarItemsWithNoPointerEvents;
+var SCROLL_THRESHOLD = {
+    width: 550,
+    height: 650
+};
+var ANNOTATION_TYPE = ["LNE", "DLNE", "LALNE", "TALNE", "DALNE", "BOX", "FRECT", "ELLI", "FELLI", "WIPOUT", "HLT", "FRH", "FREETXT", "STICKYNOTE", "IMGSTAMP", "TXTSTAMP", "ATTACHNOTE", "HLINK"];
+var OPALL_ICONS = {
+    INFO: {
+        id: 1,
+        path: "../images/info.svg" + OPALL.query_ver
+    },
+    ERROR: {
+        id: 2,
+        path: "../images/error.svg" + OPALL.query_ver
+    },
+    WARNING: {
+        id: 3,
+        path: "../images/warning.svg" + OPALL.query_ver
+    }
+};
+var ZOOMLENS_MIN_DIMENSION = {
+    width: 157,
+    height: 30
+};
+var scrollTop = 0;
+var PRINTPAGENUM = [1000, 1010, 1100, 1110];
+function ViewerManager(a, b) {
+    this.ImageCanvas = a;
+    this.ImageCanvasContext = null;
+    this.AnnotationCanvas = b;
+    this.AnnotationCanvasContext = null;
+    this.ServerSupportMultiPage = "true";
+    this.Self = this;
+    this.ImageOperationList = [];
+    this.zoomLens = null;
+    this.SRC = PARAM.url_ImageFileName;
+    this.ImageFileName = null;
+    this.NumberOfPages = PARAM.NumberOfPages;
+    this.CurrentPage = 0;
+    this.PreviousPage = 0;
+    this.PageRequested = 0;
+    this.PdfManager = new PDFHolder(this);
+    this.AnnotationManager = new AnnotationHolder(this);
+    this.TextLayer = new TextLayer();
+    this.textLayerManager = new TextLayerManager(this);
+    this.docFactory = new OPALL.DocumentFactory();
+    this.Angle = 0;
+    this.StartPage = PARAM.num_VisiblePage;
+    this.ZoomFactor = 1;
+    this.previousZoomFactor = 1;
+    this.ScreenDPI = 96;
+    this.PdfDPI = 72;
+    this.MaximumZoom = 1600;
+    this.MinimumZoom = 1;
+    this.ZoomScale = this.ScreenDPI / this.PdfDPI;
+    this.DefaultZoom = 1;
+    this.topOffset = 0;
+    this.leftOffset = 0;
+    this.viewerLeft = 30;
+    this.viewerTop = 60;
+    this.viewerWidth = 500;
+    this.viewerHeight = 600;
+    this.num_RotateOption = 0;
+    this.ViewerCanvasColor = 15790320;
+    this.isRetainDisplaySettings = true;
+    this.noNavYet = true;
+    this.isBrightnessOption = false;
+    this.TransformOption = 1;
+    this.AnnotationOption = 0;
+    this.ImageInfo = {
+        Xdpi: 96,
+        Ydpi: 96,
+        ImageHeight: 0,
+        ImageWidth: 0
+    };
+    this.operationList = [];
+    this.documentOperationList = {};
+    this.undoList = [];
+    this.redoList = [];
+    this.brightnessLevel = 0;
+    this.bDeskewed = false;
+    this.ResizeOption = PARAM.ResizeOption;
+    this.ResizePercentage = PARAM.ResizePercentage;
+    this.INIPath = PARAM.URL_Annotation;
+    this.StampINIPath = PARAM.URL_StampINIPath;
+    this.StampFile = PARAM.URL_ImageStampFile;
+    this.bAnnotationDisplay = PARAM.AnnotationDisplay;
+    this.CroppedImageSize = PARAM.CroppedImageSize,
+    this.IsAnnotationBurningRequired = PARAM.IsAnnotationBurningRequired;
+    this.DynamicZoneThickness = PARAM.DynamicZoneThickness;
+    this.CropOption = PARAM.CropOption;
+    this.cropImageMinQuality = PARAM.cropImageMinQuality;
+    this.url_WriteAnnotation = PARAM.url_WriteAnnotation;
+    this.CurrentUserName = PARAM.CurrentUserName;
+    this.horizontallyFlipped = false;
+    this.verticallyFlipped = false;
+    this.printOption = PARAM.printOption;
+    this.disablePrintOption = PARAM.DisablePrintOption;
+    this.PrintParameter = PARAM.PrintParameter;
+    this.watermarkPrinting = PARAM.watermarkPrinting;
+    this.InitialZoomLensStatus = (PARAM.InitialZoomLensStatus != "true") ? false : true;
+    this.InitialZoomLensPercentage = PARAM.InitialZoomLensPercentage,
+    this.IsZoomWindowChangeRequired = PARAM.IsZoomWindowChangeRequired;
+    this.ZoomLensForZoning = PARAM.ZoomLensForZoning.split(",");
+    this.ShowUsernamesWithAllAnnotation = false;
+    this.ShowUsernamesWithAllAnnotationView = false;
+    this.ShowUsernamesWithAllAnnotationPrint = false;
+    switch (typeof PARAM.ShowUsernamesWithAllAnnotation) {
+    case "string":
+        this.ShowUsernamesWithAllAnnotation = (PARAM.ShowUsernamesWithAllAnnotation == "true") ? true : false;
+        if (PARAM.ShowUsernamesWithAllAnnotation == "true") {
+            this.ShowUsernamesWithAllAnnotation = true
+        } else {
+            var c = PARAM.ShowUsernamesWithAllAnnotation.split(",");
+            if (c.length != 3) {
+                this.ShowUsernamesWithAllAnnotation = false
+            } else {
+                this.ShowUsernamesWithAllAnnotation = (parseInt(c[0].trim()) == 0) ? false : true;
+                this.ShowUsernamesWithAllAnnotationView = (parseInt(c[1].trim()) == 0) ? false : true;
+                this.ShowUsernamesWithAllAnnotationPrint = (parseInt(c[2].trim()) == 0) ? false : true
+            }
+        }
+        break;
+    case "boolean":
+        this.ShowUsernamesWithAllAnnotation = (PARAM.ShowUsernamesWithAllAnnotation === true) ? 1 : 0;
+        break;
+    default:
+        break
+    }
+    this.printingManager = null;
+    this.bAnnotationVisible = true;
+    this.TextWaterMarkPosition = parseInt(PARAM.TextWaterMarkPosition, 10);
+    this.TextAsWaterMark = PARAM.TextAsWaterMark;
+    this.Watermark_Properties = PARAM.Watermark_Properties;
+    this.DateTimeFormat = parseInt(PARAM.DateTimeFormat, 10);
+    this.DynamicHideNShowToolBar = parseInt(PARAM.DynamicHideNShowToolBar, 10);
+    this.bDynamicShowHideToolbar = false;
+    this.bStampWithoutINI = (PARAM.StampWithoutINI != "true") ? false : true;
+    this.URL_saveImageTransformations = PARAM.URL_saveImageTransformations;
+    this.IsZoomLensDisable = (PARAM.IsZoomLensDisable != "true") ? false : true;
+    this.bMenuBar = (PARAM.MenuBar != "true") ? false : true;
+    this.annotToolbar_Alignment = PARAM.annotToolbar_Alignment;
+    this.localeDirection = PARAM.localeDirection;
+    this.m_Notes = PARAM.URL_Notes;
+    this.urlHelpFile = PARAM.URL_HelpFile;
+    this.DefaultFontSettings = PARAM.DefaultFontSettings;
+    this.DynamicText = PARAM.DynamicText;
+    this.setPropertyDialogItem = PARAM.SetPropertyDialogItem;
+    this.stampPasswordURL = PARAM.URL_passwordStamp;
+    this.bHyperlinkAnnotation = PARAM.HyperlinkAnnotation;
+    this.PenThickness = PARAM.PenThickness;
+    this.AnnotationColor = parseInt(PARAM.AnnotationColor, 10);
+    this.SecureAnnotationURL = PARAM.URL_SecureAnnotations;
+    this.isScanResolution = false;
+    this.stampServletURL = PARAM.StampServletURL;
+    this.isFormExtractMode = false;
+    this.DynamicZoneThickness = 1;
+    this.DisplayScrollOnResize = (PARAM.DisplayScrollOnResize != "true") ? false : true;
+    this.RequestMethod = PARAM.RequestMethod;
+    this.FastNav = false;
+    this.FastNavState = 0;
+    this.tempPage = 1;
+    this.localFile = PARAM.localFile;
+    this.displayLocalFile = false;
+    this.OpenFileOption = false;
+    this.isTextSelectable = true;
+    this.opAllLoaded = false;
+    this.zoomFlag = "";
+    this.URL_ConvertToPDF = PARAM.URL_ConvertToPDF;
+    this.isImageNegated = false;
+    this.DocumentData = PARAM.DocumentData;
+    this.currentVector = [1, 2, 1];
+    this.bLocalFileDisplayed = false;
+    this.bPrintDateTime = true;
+    this.bPrintUnsavedAnnotation = true;
+    this.printApproach = 1;
+    this.bSaveAnnotationDialog = true;
+    this.clickedIconID = null;
+    this.bCenterAlign = true;
+    this.bHoverToolbar = false;
+    this.toolbarVersion = 1;
+    this.theme = {
+        id: 1
+    };
+    this.bValidateURLContext = true;
+    this.bOrientationCorrectivePrinting = false;
+    this.autoSaveAnnotation = 1;
+    this.pageSetupIE = {
+        page_size: "A4",
+        margin_left: "0.0",
+        margin_top: "0.0",
+        margin_right: "0.0",
+        margin_bottom: "0.0",
+        bheader: false,
+        bfooter: false,
+        benable_shrink: true,
+        bEnablePrintMargins: false,
+        bEnableIEonly: false
+    };
+    this.bRetainAngleSettings = false;
+    this.printWinVersion = "";
+    this.hideRegion = PARAM.hideRegion;
+    this.bDisableDragAndDrop = PARAM.bDisableDragAndDrop;
+    this.allPagesBrightness = [];
+    this.bPrintWaterMarkOnCanvas = false;
+    this.bHighZoom = false;
+    this.NORMALZOOMPIXELLIMIT = 40000000;
+    this.bViewWaterMark = false;
+    this.resizeExMaxZoomLimit = -100;
+    this.resizeExMaxPixelLimit = 10000000;
+    this.bDisableLoadingBanner = false;
+    this.maxDisplayPixelLimit = 200000000;
+    this.bEnableSearchOption = false;
+    this.bSearchEnabled = false;
+    this.searchConfiguration = {
+        highlightAll: false,
+        color: "rgba(255, 255, 0, 0.2)",
+        focusColor: "rgba(255, 255, 0, 0.4)"
+    };
+    this.bLocalFileMultipartSupport = false;
+    this.bEnableAddBookmark = false;
+    this.url_VerifyDigitalSignature = "";
+    this.bSinglePageScrollMode = false;
+    this.zoomChange = false;
+    this.fontsConfig = {
+        fontsList: ["Impact", "Arial", "Times New Roman", "Courier", "Verdana"]
+    };
+    this.bfirstPageLoaded = false;
+    this.viewerFontConfig = {
+        fontFamily: "arial, sans-serif",
+        src: "",
+        format: "",
+        fontSize: "12px"
+    };
+    this.invokeMenu = null;
+    this.invokeButton = null;
+    this.tempinvokeButton = null;
+    this.printPageNumStrLocation = 0;
+    this.bPDFDigiSignEnable = false;
+    this.WASMBrowserSupport = false;
+    this.urlRequestHeaderData = {};
+    this.printFlag = false;
+    this.hidePrintAlert = 0;
+    this.AnnotationNotApplied = false;
+    this.skipPageCount = 0
+}
+ViewerManager.prototype.GetParameters = function () {
+    if (typeof window.frameElement.__opall == "object") {
+        window.__opall = window.frameElement.__opall
+    } else {
+        if (parent.opall) {
+            window.__opall = parent.opall
+        }
+    }
+    PARAM = __opall.loadParameters();
+    this.ImageFileName = PARAM.url_ImageFileName;
+    this.NumberOfPages = parseInt(PARAM.NumberOfPages, 10);
+    if (isNaN(this.NumberOfPages)) {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.InvalidPagesParameter || "Invalid NumberOfPages Parameter")
+    }
+    this.viewerWidth = parseInt(PARAM.ViewerWidth, 10);
+    this.viewerHeight = parseInt(PARAM.ViewerHeight, 10);
+    this.StartPage = parseInt(PARAM.num_VisiblePage, 10);
+    this.ResizeOption = PARAM.ResizeOption;
+    this.ResizePercentage = PARAM.ResizePercentage;
+    this.ServerSupportMultiPage = UTIL.toBoolean(PARAM.ServerSupportMultiPage, true);
+    this.INIPath = PARAM.URL_Annotation;
+    this.StampINIPath = PARAM.URL_StampINIPath;
+    this.StampFile = PARAM.URL_ImageStampFile;
+    this.bAnnotationDisplay = UTIL.toBoolean(PARAM.AnnotationDisplay, false);
+    this.CroppedImageSize = parseInt(PARAM.CroppedImageSize, 10),
+    this.IsAnnotationBurningRequired = UTIL.toBoolean(PARAM.IsAnnotationBurningRequired, false);
+    this.DynamicZoneThickness = parseInt(PARAM.DynamicZoneThickness, 10);
+    this.CropOption = PARAM.CropOption;
+    this.cropImageMinQuality = parseFloat(PARAM.cropImageMinQuality, 10);
+    if (isNaN(this.cropImageMinQuality)) {
+        this.cropImageMinQuality = 0.1
+    }
+    this.url_WriteAnnotation = PARAM.url_WriteAnnotation;
+    this.InitialZoomLensStatus = UTIL.toBoolean(PARAM.InitialZoomLensStatus, false);
+    this.InitialZoomLensPercentage = parseInt(PARAM.InitialZoomLensPercentage, 10);
+    this.IsZoomWindowChangeRequired = UTIL.toBoolean(PARAM.IsZoomWindowChangeRequired, true);
+    if (PARAM.ZoomLensForZoning) {
+        this.ZoomLensForZoning = PARAM.ZoomLensForZoning.split(",")
+    }
+    this.CurrentUserName = PARAM.CurrentUserName;
+    this.printOption = UTIL.toBoolean(PARAM.printOption, true);
+    this.disablePrintOption = UTIL.toBoolean(PARAM.DisablePrintOption, false);
+    this.PrintParameter = PARAM.PrintParameter;
+    this.watermarkPrinting = parseInt(PARAM.watermarkPrinting, 10);
+    this.ShowUsernamesWithAllAnnotation = false;
+    this.ShowUsernamesWithAllAnnotationView = false;
+    this.ShowUsernamesWithAllAnnotationPrint = false;
+    switch (typeof PARAM.ShowUsernamesWithAllAnnotation) {
+    case "string":
+        if (PARAM.ShowUsernamesWithAllAnnotation == "true") {
+            this.ShowUsernamesWithAllAnnotation = true
+        } else {
+            var a = PARAM.ShowUsernamesWithAllAnnotation.split(",");
+            if (a.length != 3) {
+                this.ShowUsernamesWithAllAnnotation = false
+            } else {
+                this.ShowUsernamesWithAllAnnotation = (parseInt(a[0].trim()) == 0) ? false : true;
+                this.ShowUsernamesWithAllAnnotationView = (parseInt(a[1].trim()) == 0) ? false : true;
+                this.ShowUsernamesWithAllAnnotationPrint = (parseInt(a[2].trim()) == 0) ? false : true
+            }
+        }
+        break;
+    case "boolean":
+        this.ShowUsernamesWithAllAnnotation = (PARAM.ShowUsernamesWithAllAnnotation === true) ? 1 : 0;
+        break;
+    default:
+        break
+    }
+    this.TextWaterMarkPosition = parseInt(PARAM.TextWaterMarkPosition, 10);
+    this.TextAsWaterMark = PARAM.TextAsWaterMark;
+    this.Watermark_Properties = PARAM.Watermark_Properties;
+    this.DateTimeFormat = PARAM.DateTimeFormat;
+    this.num_RotateOption = parseInt(PARAM.num_RotateOption, 10);
+    this.Angle = this.num_RotateOption;
+    this.ViewerCanvasColor = parseInt(PARAM.color_ViewerCanvas, 10);
+    this.isRetainDisplaySettings = UTIL.toBoolean(PARAM.RetainViewSettings, true);
+    this.isBrightnessOption = UTIL.toBoolean(PARAM.BrightnessOption, true);
+    this.TransformOption = parseInt(PARAM.TransformOption, 10);
+    this.URL_saveImageTransformations = PARAM.URL_saveImageTransformations;
+    this.DynamicHideNShowToolBar = PARAM.DynamicHideNShowToolBar;
+    this.bStampWithoutINI = UTIL.toBoolean(PARAM.StampWithoutINI, false);
+    this.AnnotationOption = parseInt(PARAM.AnnotationOption, 10);
+    this.IsZoomLensDisable = UTIL.toBoolean(PARAM.IsZoomLensDisable, false);
+    this.bMenuBar = UTIL.toBoolean(PARAM.MenuBar, false);
+    this.annotToolbar_Alignment = PARAM.annotToolbar_Alignment;
+    this.m_Notes = PARAM.URL_Notes;
+    this.urlHelpFile = PARAM.URL_HelpFile;
+    this.DefaultFontSettings = PARAM.DefaultFontSettings;
+    this.DynamicText = PARAM.DynamicText;
+    this.localeDirection = PARAM.localeDirection;
+    this.setPropertyDialogItem = PARAM.SetPropertyDialogItem;
+    this.stampPasswordURL = PARAM.URL_passwordStamp;
+    this.bHyperlinkAnnotation = UTIL.toBoolean(PARAM.HyperlinkAnnotation, false);
+    this.PenThickness = parseInt(PARAM.PenThickness, 10);
+    this.AnnotationColor = parseInt(PARAM.AnnotationColor, 10);
+    this.SecureAnnotationURL = PARAM.URL_SecureAnnotations;
+    this.stampServletURL = PARAM.StampServletURL;
+    this.DynamicZoneThickness = parseInt(PARAM.DynamicZoneThickness, 10);
+    this.DisplayScrollOnResize = UTIL.toBoolean(PARAM.DisplayScrollOnResize, false);
+    this.RequestMethod = ("POST" === (PARAM.RequestMethod ? PARAM.RequestMethod.toUpperCase() : "") ? "POST" : "GET");
+    this.OpenFileOption = UTIL.toBoolean(PARAM.OpenFileOption, false);
+    this.isTextSelectable = UTIL.toBoolean(PARAM.isTextSelectable, false);
+    this.URL_ConvertToPDF = PARAM.URL_ConvertToPDF;
+    this.DocumentData = PARAM.DocumentData;
+    this.AnnotationManager.SetDefaultGroupAndUser(this.CurrentUserName);
+    this.bPrintDateTime = UTIL.toBoolean(PARAM.bPrintDateTime, true);
+    this.bPrintUnsavedAnnotation = UTIL.toBoolean(PARAM.bPrintUnsavedAnnotation, true);
+    this.printApproach = parseInt(PARAM.printApproach, 10);
+    this.bSaveAnnotationDialog = UTIL.toBoolean(PARAM.bSaveAnnotationDialog, true);
+    this.bCenterAlign = UTIL.toBoolean(PARAM.bCenterAlign, true);
+    this.bHoverToolbar = UTIL.toBoolean(PARAM.bHoverToolbar, false);
+    this.toolbarVersion = parseInt(PARAM.toolbarVersion, 10);
+    this.theme = PARAM.theme;
+    this.bNewToolbar = (0 === this.toolbarVersion ? false : true);
+    this.bValidateURLContext = UTIL.toBoolean(PARAM.bValidateURLContext, true);
+    this.bOrientationCorrectivePrinting = UTIL.toBoolean(PARAM.bOrientationCorrectivePrinting, false);
+    this.autoSaveAnnotation = parseInt(PARAM.autoSaveAnnotation, 10);
+    this.pageSetupIE.bheader = (PARAM.pageSetupIE ? UTIL.toBoolean(PARAM.pageSetupIE.bheader, false) : false);
+    this.pageSetupIE.bfooter = (PARAM.pageSetupIE ? UTIL.toBoolean(PARAM.pageSetupIE.bfooter, false) : false);
+    if (PARAM.pageSetupIE.page_size) {
+        this.pageSetupIE.page_size = PARAM.pageSetupIE.page_size
+    }
+    if (PARAM.pageSetupIE.margin_left) {
+        this.pageSetupIE.margin_left = parseFloat(PARAM.pageSetupIE.margin_left)
+    }
+    if (PARAM.pageSetupIE.margin_top) {
+        this.pageSetupIE.margin_top = parseFloat(PARAM.pageSetupIE.margin_top)
+    }
+    if (PARAM.pageSetupIE.margin_right) {
+        this.pageSetupIE.margin_right = parseFloat(PARAM.pageSetupIE.margin_right)
+    }
+    if (PARAM.pageSetupIE.margin_bottom) {
+        this.pageSetupIE.margin_bottom = parseFloat(PARAM.pageSetupIE.margin_bottom)
+    }
+    if (PARAM.pageSetupIE.bEnablePrintMargins) {
+        this.pageSetupIE.bEnablePrintMargins = UTIL.toBoolean(PARAM.pageSetupIE.bEnablePrintMargins, false)
+    }
+    if (PARAM.pageSetupIE.bEnableIEonly) {
+        this.pageSetupIE.bEnableIEonly = UTIL.toBoolean(PARAM.pageSetupIE.bEnableIEonly, false)
+    }
+    if (this.pageSetupIE.bEnableIEonly) {
+        if ("Internet Explorer" !== this.env.browser) {
+            this.pageSetupIE.bEnablePrintMargins = false
+        }
+    }
+    this.bRetainAngleSettings = UTIL.toBoolean(PARAM.RetainAngleSettings, false);
+    this.printWinVersion = PARAM.printWinVersion;
+    this.hideRegion.regions = PARAM.hideRegion ? PARAM.hideRegion.regions : [];
+    this.hideRegion.color = parseInt((PARAM.hideRegion ? PARAM.hideRegion.color : "0"), 10);
+    this.bDisableDragAndDrop = UTIL.toBoolean(PARAM.bDisableDragAndDrop, true);
+    this.bPrintWaterMarkOnCanvas = UTIL.toBoolean(PARAM.bPrintWaterMarkOnCanvas, false);
+    this.bViewWaterMark = UTIL.toBoolean(PARAM.bViewWaterMark, false);
+    this.resizeExMaxZoomLimit = parseInt(PARAM.resizeExMaxZoomLimit) / 100;
+    this.resizeExMaxPixelLimit = parseInt(PARAM.resizeExMaxPixelLimit);
+    if (isNaN(this.resizeExMaxZoomLimit)) {
+        this.resizeExMaxZoomLimit = -1
+    }
+    if (isNaN(this.resizeExMaxPixelLimit)) {
+        this.resizeExMaxPixelLimit = 10000000
+    }
+    this.bDisableLoadingBanner = UTIL.toBoolean(PARAM.bDisableLoadingBanner, false);
+    this.maxDisplayPixelLimit = parseInt(PARAM.maxDisplayPixelLimit, 10);
+    this.bEnableSearchOption = UTIL.toBoolean(PARAM.bEnableSearchOption, false);
+    this.searchConfiguration.highlightAll = UTIL.toBoolean(PARAM.searchConfiguration ? PARAM.searchConfiguration.highlightAll : false);
+    if (PARAM.searchConfiguration) {
+        if (!PARAM.searchConfiguration.color || (PARAM.searchConfiguration.color && PARAM.searchConfiguration.color.trim() === "")) {
+            this.searchConfiguration.color = "rgba(255, 255, 0, 0.2)"
+        } else {
+            this.searchConfiguration.color = PARAM.searchConfiguration.color
+        }
+    }
+    if (PARAM.searchConfiguration) {
+        if (!PARAM.searchConfiguration.focusColor || (PARAM.searchConfiguration.focusColor && PARAM.searchConfiguration.focusColor.trim() === "")) {
+            this.searchConfiguration.focusColor = "rgba(255, 255, 0, 0.4)"
+        } else {
+            this.searchConfiguration.focusColor = PARAM.searchConfiguration.focusColor
+        }
+    }
+    this.bLocalFileMultipartSupport = UTIL.toBoolean(PARAM.bLocalFileMultipartSupport, false);
+    this.bEnableAddBookmark = UTIL.toBoolean(PARAM.bEnableAddBookmark, false);
+    this.url_VerifyDigitalSignature = PARAM.url_VerifyDigitalSignature;
+    this.bSinglePageScrollMode = UTIL.toBoolean(PARAM.bSinglePageScrollMode, false);
+    if (PARAM.fontsConfig) {
+        this.fontsConfig = PARAM.fontsConfig
+    }
+    if (PARAM.viewerFontConfig) {
+        if (PARAM.viewerFontConfig.fontFamily && PARAM.viewerFontConfig.fontFamily != this.viewerFontConfig.fontFamily) {
+            this.viewerFontConfig.fontFamily = PARAM.viewerFontConfig.fontFamily
+        }
+        if (PARAM.viewerFontConfig.fontSize && PARAM.viewerFontConfig.fontSize != this.viewerFontConfig.fontSize) {
+            this.viewerFontConfig.fontSize = PARAM.viewerFontConfig.fontSize
+        }
+        if (PARAM.viewerFontConfig.src && PARAM.viewerFontConfig.src != this.viewerFontConfig.src) {
+            this.viewerFontConfig.src = PARAM.viewerFontConfig.src
+        }
+        if (PARAM.viewerFontConfig.format && PARAM.viewerFontConfig.format != this.viewerFontConfig.format) {
+            this.viewerFontConfig.format = PARAM.viewerFontConfig.format
+        }
+    }
+    this.printPageNumStrLocation = parseInt(PARAM.printPageNumStrLocation, 10);
+    if (PRINTPAGENUM.indexOf(this.printPageNumStrLocation) < 0) {
+        this.printPageNumStrLocation = 0
+    }
+    this.bPDFDigiSignEnable = UTIL.toBoolean(PARAM.bPDFDigiSignEnable, false);
+    this.urlRequestHeaderData = PARAM.urlRequestHeaderData;
+    if (!(typeof this.urlRequestHeaderData === "object" && !Array.isArray(this.urlRequestHeaderData) && this.urlRequestHeaderData !== null)) {
+        this.urlRequestHeaderData = null
+    }
+    this.skipPrintCorruptPage = PARAM.skipPrintCorruptPage
+};
+ViewerManager.prototype.getRequestedPageURL = function (g, a) {
+    var b = "PageNo";
+    if (a !== "" && a !== undefined) {
+        var j = a.toLowerCase();
+        var f = j.indexOf(b.toLowerCase());
+        var e = a.substring(0, f) + a.substring(f, f + b.length);
+        var c = a.substring(f + b.length);
+        e = e + c.split("=")[0] + "=";
+        var h = "";
+        var d = c.indexOf("&");
+        if (d != -1) {
+            h = c.substring(d)
+        }
+        e = e + g;
+        return (e + h)
+    } else {
+        return ""
+    }
+};
+ViewerManager.prototype.ShowPage = function (a) {
+    if (this.AnnotationManager.change && (TOOLKIT && TOOLKIT.annotationModified())) {
+        if (typeof parent.isAnnotationsModified === "function") {
+            parent.isAnnotationsModified(this.CurrentPage)
+        }
+        if (2 == this.autoSaveAnnotation || 3 == this.autoSaveAnnotation) {
+            TOOLKIT.autoSaveAnnotation(function (f) {
+                if (f) {
+                    VIEWER_MANAGER.AnnotationManager.change = false;
+                    VIEWER_MANAGER.ShowPage(a)
+                }
+            });
+            return 1
+        }
+    }
+    this.tempPage = a;
+    if (this.StartPage != a) {
+        this.noNavYet = false
+    }
+    if (this.opAllLoaded === true) {
+        this.zoomFlag = document.getElementById("zoomDropList").value.split(" ");
+        this.zoomFlag = this.zoomFlag.join("")
+    } else {
+        this.opAllLoaded = true;
+        this.zoomFlag = RESIZE_OPTIONS[this.ResizeOption]
+    }
+    try {
+        this.pageLoaded = false;
+        this.annotationLoaded = false;
+        this.AnnotationManager.change = false;
+        $("#bothCanvas").show();
+        this.AnnotationManager.isFirstDisplay = true;
+        this.AnnotationManager.waitforannotation = false;
+        var b = parseInt(a, 10);
+        this.clearStamps();
+        UTIL.disableEvents();
+        if (this.OpenFileOption) {
+            UTIL.setCss("#file", {
+                pointerEvents: "auto"
+            });
+            var c = document.getElementById("menu_openFile");
+            while (c.id !== "menu") {
+                c.style.pointerEvents = "auto";
+                c = c.parentElement
+            }
+            c.style.pointerEvents = "auto"
+        }
+        if (!this.textLayerManager.textPageChange) {
+            this.textLayerManager.clearAll()
+        }
+        if ((b != this.CurrentPage) && (b > 0) && ((-1 === this.NumberOfPages) || (b <= this.NumberOfPages))) {
+            this.PageRequested = b;
+            this.prevZoomIndex = -1;
+            ShowLoadingBanner(true, OPALL_MESSAGE.Loading);
+            this.printFlag = false;
+            if (this.ServerSupportMultiPage == true) {
+                this.SRC = this.getRequestedPageURL(b, this.ImageFileName);
+                this.load_WASM_SSM(this.SRC)
+            } else {
+                this.SRC = this.ImageFileName;
+                if (this.PdfManager.PDFdocument && !this.displayLocalFile) {
+                    this.PdfManager.openPage(b)
+                } else {
+                    if (this.displayLocalFile) {
+                        this.PdfManager.loadPDF(this.Self)
+                    } else {
+                        this.load_WASM_SSM(this.SRC)
+                    }
+                }
+            }
+            this.AnnotationManager.firstAnnotationLoad = true;
+            this.LoadAnnotation(b);
+            this.LoadStampAnnotationINI();
+            var e = document.getElementById("page_no");
+            if (VIEWER_MANAGER.FastNavState === 0) {
+                e.value = this.CurrentPage;
+                document.getElementById("input_page").value = this.CurrentPage;
+                document.getElementById("toolbar_page_no").value = this.CurrentPage
+            }
+            this.OpenNotesWindow(b);
+            return 1
+        } else {
+            if (b == this.CurrentPage && this.StartPage) {
+                this.PageRequested = this.CurrentPage;
+                UTIL.enableEvents(isImagePDF);
+                DisplayPageNumber(this.CurrentPage);
+                return 1
+            } else {
+                if ((this.StartPage <= 0) || (this.StartPage > this.NumberOfPages)) {
+                    opallAlert(OPALL_ICONS.ERROR.id, (OPALL_ERR_MESSAGE.PageNumberErrorMsg ? OPALL_ERR_MESSAGE.PageNumberErrorMsg : "Requested page is not available in the document") + " (" + this.StartPage + "/" + this.NumberOfPages + ")");
+                    Logger.log(Logger.ERROR, "Requested page is not available in the document(" + this.StartPage + "/" + this.NumberOfPages + ")");
+                    return -1
+                } else {
+                    this.PageRequested = this.CurrentPage;
+                    UTIL.enableEvents(isImagePDF);
+                    DisplayPageNumber(this.CurrentPage);
+                    return -1
+                }
+            }
+        }
+    } catch (d) {
+        this.HandlePageLoadError(d)
+    }
+};
+ViewerManager.prototype.pageAndAnntotationLoadCallback = function (g) {
+    if ("page" === g) {
+        var a = this.PdfManager.lastPageRetrieved;
+        if (isImagePDF) {
+            var h = this.PdfManager.savedImage;
+            if (this.maxDisplayPixelLimit <= h.width * h.height) {
+                Logger.log(Logger.ERROR, "image too large to be painted, > " + this.maxDisplayPixelLimit);
+                return
+            }
+            var d = this.extractTransformations(a);
+            if (h.width < this.PdfManager.getOriginalWidth() * 0.7 && h.height < this.PdfManager.getOriginalHeight() * 0.7) {
+                window.isImagePDF = false
+            }
+            if (d.isImagePDF && isImagePDF) {
+                this.applyTransformation(d, h);
+                CanvasUtil.rotate(h, a.pageInfo.rotate);
+                this.ImageInfo.Xdpi = (h.width * PDF_DPI) / this.PdfManager.getOriginalWidth();
+                this.ImageInfo.Ydpi = (h.height * PDF_DPI) / this.PdfManager.getOriginalHeight();
+                this.ImageInfo.ImageHeight = h.height;
+                this.ImageInfo.ImageWidth = h.width
+            } else {
+                window.isImagePDF = false;
+                if (false === pageRendered) {
+                    window.pageLoaded = false;
+                    return
+                }
+                this.PdfManager.savedImage = Pages[1].canvas;
+                this.ImageInfo.Xdpi = 96;
+                this.ImageInfo.Ydpi = 96;
+                this.ImageInfo.ImageHeight = Pages[1].canvas.height;
+                this.ImageInfo.ImageWidth = Pages[1].canvas.width
+            }
+        }
+        this.PdfManager.imagesArray = this.PdfManager.getImageObjects();
+        a.destroy();
+        window.pageLoaded = true;
+        this.pageLoaded = true;
+        this.hideRegionsofDocument(this.PdfManager.savedImage, this.PageRequested);
+        if (this.bViewWaterMark) {
+            this.addWaterMarkOnCanvas(this.PdfManager.savedImage, this.ImageInfo.Xdpi, this.ImageInfo.Ydpi)
+        }
+    } else {
+        if ("annotation" === g) {
+            this.annotationLoaded = true
+        } else {
+            if (g.indexOf("annotation") != -1) {
+                Logger.log(Logger.ERROR, "error occured while loading annotations");
+                this.HandlePageLoadError("error occured while loading annotations")
+            } else {
+                if (g.indexOf("page") != -1) {
+                    Logger.log(Logger.ERROR, "error occured while loading page");
+                    this.HandlePageLoadError()
+                }
+            }
+        }
+    }
+    if (this.pageLoaded && (this.annotationLoaded || !this.bAnnotationDisplay)) {
+        this.ImageLoadSucessHandler();
+        TOOLKIT.loadToolKit();
+        UTIL.showHoverToolbars();
+        if (this.zoomLens != null) {
+            this.zoomLens.invCanvas = null;
+            var c = this.xCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Xdpi);
+            var b = this.yCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Ydpi);
+            var e = c * this.PdfManager.savedImage.width;
+            var f = b * this.PdfManager.savedImage.height;
+            this.zoomLens.SetFocusArea((c + e) / 2, (b + f) / 2);
+            if (!isImagePDF) {
+                this.zoomLens.invCanvas = null
+            }
+        }
+        TOOLKIT.callbackIsImageDisplayed(this.CurrentPage)
+    }
+};
+ViewerManager.prototype.renderPage = function (b, a, c) {
+    this.PdfManager.drawResizeAndRotatedPage(b, a, c)
+};
+ViewerManager.prototype.renderAnnotation = function (b, c, d, a) {
+    d = d || b;
+    a = a || c;
+    this.AnnotationManager.resizeAnnotation(b, c, d, a);
+    this.xPrevZoomFactor = c;
+    this.yPrevZoomFactor = a;
+    this.xCurrentZoomFactor = b;
+    this.yCurrentZoomFactor = d;
+    this.AnnotationManager.drawImmediate()
+};
+ViewerManager.prototype.ImageLoadSucessHandler = function () {
+    UTIL.setCss("#annotCanvas", {
+        pointerEvents: "auto"
+    });
+    this.PreviousPage = this.CurrentPage;
+    this.CurrentPage = parseInt(this.PageRequested, 10);
+    this.undoList = [];
+    this.redoList = [];
+    try {
+        if (!this.bfirstPageLoaded) {
+            this.bfirstPageLoaded = true;
+            if (this.bSinglePageScrollMode) {
+                UTIL.setCss("#bothCanvas", {
+                    border: "10px solid transparent",
+                    backgroundClip: "content-box",
+                    borderImage: 'url("../images/shadow.png") 9 9 repeat',
+                    left: "-10px"
+                }, false)
+            }
+        }
+        TOOLKIT.SelectText(false);
+        this.SetDefaultZoomAndAngle();
+        this.resetImageOperations();
+        this.isImageNegated = false;
+        this.AnnotationManager.annotationList = [];
+        this.AnnotationManager.imageStampList = [];
+        this.AnnotationManager.selection = [];
+        this.AnnotationManager.selectionIndex = [];
+        this.AnnotationManager.prevZoomFactor = 1;
+        if (this.bAnnotationDisplay) {
+            this.AnnotationManager.AnnotationDataLoaded(this.AnnotationManager.annotationData[this.CurrentPage])
+        }
+        if (this.isScanResolution) {
+            this.renderAnnotation(this.ImageInfo.Xdpi / this.ScreenDPI, this.ImageInfo.Xdpi / this.ScreenDPI, this.ImageInfo.Ydpi / this.ScreenDPI, this.ImageInfo.Ydpi / this.ScreenDPI)
+        } else {
+            this.renderAnnotation(this.ZoomFactor, this.ImageInfo.Xdpi / this.ScreenDPI, this.ZoomFactor, this.ImageInfo.Ydpi / this.ScreenDPI)
+        }
+        if (this.bAnnotationVisible) {
+            document.getElementById("menu_display_annotation").innerHTML = MENUBAR.menu_display_annotation ? MENUBAR.menu_display_annotation : "Hide Annotations";
+            document.getElementById("hideAnnotationIcon").style.display = "block";
+            document.getElementById("showAnnotationIcon").style.display = "none";
+            document.getElementById("toolbar_hide_show_annotation").setAttribute("title", STANDARD_TOOLBAR.hide_annotation)
+        }
+        this.renderPage();
+        if (this.displayLocalFile) {
+            this.bLocalFileDisplayed = true;
+            UTILS.changeNumPages();
+            DisplayPageNumber(this.CurrentPage);
+            this.displayLocalFile = false;
+            this.AnnotationManager.draw(false)
+        }
+    } catch (a) {
+        Logger.log(Logger.INFO, "Error in ImageLoadSucessHandler: " + a.message);
+        if (PDFJS.ImageDetails.decode_status == "Success") {
+            UTIL.disableEvents();
+            this.HandlePageLoadError(a)
+        }
+    }
+};
+ViewerManager.prototype.ImageLoading = function (a, b) {
+    if (b) {
+        SetLoadingMessageText(OPALL_MESSAGE.Loading + parseInt(a * 100 / b, 10) + "%", parseInt(a * 100 / b, 10))
+    } else {
+        if (a > 1) {
+            SetLoadingMessageText(OPALL_MESSAGE.Loading + parseInt(a / 1024, 10) + " KB")
+        } else {
+            SetLoadingMessageText(OPALL_MESSAGE.Loading, -1)
+        }
+    }
+};
+ViewerManager.prototype.ImageLoadErrorHandler = function () {
+    ShowLoadingBanner(false, "");
+    opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.LoadingImageErrorMsg)
+};
+ViewerManager.prototype.SetDefaultZoomAndAngle = function () {
+    var b = this.isRetainDisplaySettings;
+    if (this.noNavYet) {
+        b = false
+    }
+    if (!this.bRetainAngleSettings) {
+        this.Angle = this.num_RotateOption
+    }
+    if (b === true) {
+        for (var a = 1; a < RESIZE_OPTIONS.length; a++) {
+            if (this.zoomFlag == RESIZE_OPTIONS[a]) {
+                SetZoomDisplay(this.zoomFlag);
+                this.ZoomFactor = this.getZoomFactorFromFlags(this.zoomFlag);
+                break
+            }
+        }
+        if (parseInt(a) >= RESIZE_OPTIONS.length) {
+            SetZoomDisplay((this.ZoomFactor * 100))
+        }
+    } else {
+        if (this.ResizeOption == 0) {
+            if ((this.ResizePercentage >= 0) && (this.ResizePercentage < RESIZE_PERCENTAGES.length)) {
+                this.ZoomFactor = this.getZoomFactorFromValue(RESIZE_PERCENTAGES[this.ResizePercentage]);
+                SetZoomDisplay(RESIZE_PERCENTAGES[this.ResizePercentage])
+            } else {
+                Logger.log(Logger.INFO, OPALL_ERR_MESSAGE.ResizePercentErrorMsg);
+                this.ZoomFactor = 1;
+                SetZoomDisplay(RESIZE_PERCENTAGES[3])
+            }
+        } else {
+            if ((this.ResizeOption >= 1) && (this.ResizeOption < RESIZE_OPTIONS.length)) {
+                this.ZoomFactor = this.getZoomFactorFromFlags(RESIZE_OPTIONS[this.ResizeOption]);
+                SetZoomDisplay(RESIZE_OPTIONS[this.ResizeOption])
+            } else {
+                Logger.log(Logger.INFO, OPALL_ERR_MESSAGE.ResizeOptionErrorMsg);
+                this.ZoomFactor = 1;
+                SetZoomDisplay(RESIZE_PERCENTAGES[3])
+            }
+        }
+    }
+    this.previousZoomFactor = 1;
+    this.xPrevZoomFactor = this.yPrevZoomFactor = 1
+};
+ViewerManager.prototype.ShowZoomedPage = function (f) {
+    this.zoomChange = true;
+    this.previousZoomFactor = this.ZoomFactor;
+    this.ZoomFactor = f;
+    var c = this;
+    var g = parseInt(Math.abs(this.previousZoomFactor - f) * 100, 10);
+    if (!isImagePDF) {
+        var a;
+        if (this.ServerSupportMultiPage) {
+            a = 1
+        } else {
+            a = this.CurrentPage
+        }
+        var e = this.PdfManager.lastPageRetrieved;
+        var d = e.getViewport(f * CSS_UNITS).width;
+        var b = e.getViewport(f * CSS_UNITS).height;
+        var h = f;
+        if (d * b > this.NORMALZOOMPIXELLIMIT) {
+            this.bHighZoom = true;
+            h = f * CSS_UNITS - 0.25;
+            while (e.getViewport(h).width * e.getViewport(h).height > this.NORMALZOOMPIXELLIMIT) {
+                h -= 0.25
+            }
+            h /= CSS_UNITS
+        } else {
+            this.bHighZoom = false
+        }
+        this.PdfManager.getTextPage(a, h).then(function (j) {
+            c.PdfManager.vectorZoom = h;
+            c.renderPage(j, true, function (k) {
+                if (k) {
+                    VIEWER_MANAGER.renderAnnotation(VIEWER_MANAGER.ZoomFactor, VIEWER_MANAGER.previousZoomFactor)
+                }
+            })
+        })
+    } else {
+        this.renderPage(null, null, function (j, k) {
+            if (j) {
+                if (k) {
+                    VIEWER_MANAGER.renderAnnotation(VIEWER_MANAGER.ImageInfo.Xdpi / VIEWER_MANAGER.ScreenDPI, VIEWER_MANAGER.xCurrentZoomFactor, VIEWER_MANAGER.ImageInfo.Ydpi / VIEWER_MANAGER.ScreenDPI, VIEWER_MANAGER.yCurrentZoomFactor)
+                } else {
+                    VIEWER_MANAGER.renderAnnotation(VIEWER_MANAGER.ZoomFactor, VIEWER_MANAGER.xCurrentZoomFactor, VIEWER_MANAGER.ZoomFactor, VIEWER_MANAGER.yCurrentZoomFactor)
+                }
+            }
+        })
+    }
+};
+ViewerManager.prototype.CustomZoom = function () {
+    document.getElementById("zoomLevelText").value = Math.round((this.ZoomFactor * 100) * 100) / 100;
+    document.getElementById("zoomLevelText").focus();
+    showDialog("#CustomZoomDialog")
+};
+ViewerManager.prototype.inputCustomZoom = function (d, c) {
+    if (d.shiftKey && d.keyCode == 9) {
+        document.getElementById("zoomDropList").blur()
+    }
+    if ((d.which == 190 || d.which == 110)) {
+        if (c.indexOf(".") != -1) {
+            d.preventDefault()
+        }
+    } else {
+        if (((d.which >= 48) && (d.which <= 57)) && (d.shiftKey)) {
+            d.preventDefault()
+        } else {
+            if (((d.which < 48) || (d.which > 57)) && (d.ctrlKey == false) && (d.which != 13) && ((d.which < 96) || (d.which > 105)) && (d.which != 8) && (d.which != 9) && ((d.which < 112) || (d.which > 123)) && ((d.which < 37) || (d.which > 40)) && (d.which != 45) && (d.which != 46) && (d.which != 35) && (d.which != 36)) {
+                d.preventDefault()
+            }
+        }
+    }
+    if (d.which == 13) {
+        var b = c;
+        if (c.indexOf(".") != -1) {
+            b = (parseFloat(c)).toFixed(2)
+        }
+        b = parseFloat(b);
+        var a = document.getElementById("zoomDropList");
+        var f = document.getElementById("textZoom");
+        if ((b >= VIEWER_MANAGER.MinimumZoom) && (b <= VIEWER_MANAGER.MaximumZoom)) {
+            this.previousZoomIndex = a.selectedIndex;
+            if (a[a.selectedIndex]) {
+                this.previousZoomValue = a[a.selectedIndex].textContent
+            }
+            f.focus();
+            SetZoomDisplay(b);
+            if (100 * this.ZoomFactor !== b) {
+                this.ShowZoomedPage(b / 100)
+            }
+        } else {
+            opallAlert(OPALL_ICONS.ERROR.id, OPALL_MESSAGE.BeforeMinZoomValue + VIEWER_MANAGER.MinimumZoom + OPALL_MESSAGE.BeforeMaxZoomValue + VIEWER_MANAGER.MaximumZoom);
+            if ("Custom..." == a.value) {
+                f.value = (this.ZoomFactor * 100) + "%"
+            } else {
+                f.value = a[a.selectedIndex].textContent
+            }
+        }
+        a.selectedIndex = -1
+    }
+};
+ViewerManager.prototype.getZoomDimension = function (a) {
+    var b = {
+        width: 0,
+        height: 0
+    };
+    if (isImagePDF) {
+        b.width = this.PdfManager.savedImage.width * a * (this.ScreenDPI / this.ImageInfo.Xdpi);
+        b.height = this.PdfManager.savedImage.height * a * (this.ScreenDPI / this.ImageInfo.Ydpi)
+    } else {
+        b.width = this.PdfManager.lastPageRetrieved.getViewport(a * CSS_UNITS).width;
+        b.height = this.PdfManager.lastPageRetrieved.getViewport(a * CSS_UNITS).height
+    }
+    return b
+};
+ViewerManager.prototype.getZoomFactorFromValue = function (a) {
+    var b = a / 100;
+    return b
+};
+ViewerManager.prototype.setZoomFromPercentage = function (b) {
+    var a = parseInt(b, 10) ; //lou//
+    this.previousZoomFactor = this.ZoomFactor;
+    if (a < 100) {
+        var c = this.getZoomFactorFromValue(a);
+        if (c != this.previousZoomFactor) {
+            this.ShowZoomedPage(c)
+        }
+        SetZoomDisplay(b)
+    } else {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.ZoomPerErrMsg)
+    }
+};
+ViewerManager.prototype.setZoomFromFlags = function (a) {
+    var b = this.getZoomFactorFromFlags(a);
+    this.ShowZoomedPage(b);
+    SetZoomDisplay(a)
+};
+ViewerManager.prototype.getZoomFactorFromFlags = function (p, w) {
+    var m,
+    e,
+    k,
+    o,
+    v;
+    if (w) {
+        k = 0
+    } else {
+        k = this.PdfManager.getOriginalHeight() * this.ZoomScale;
+        o = this.PdfManager.getOriginalWidth() * this.ZoomScale
+    }
+    if ((this.Angle === 0) || (this.Angle == 180) || (this.Angle == 360)) {
+        m = k;
+        e = o
+    } else {
+        if ((this.Angle == 270) || (this.Angle == 90)) {
+            m = o;
+            e = k
+        }
+    }
+    var q = "";
+    var u = "";
+    var a = document.getElementById("viewArea");
+    this.viewerHeight = parseInt(a.style.height, 10);
+    this.viewerWidth = parseInt(a.style.width, 10);
+    var s,
+    f,
+    n,
+    c;
+    switch (p) {
+    case "FitToPage":
+        var b = 1;
+        var t = e;
+        if (this.viewerHeight < m) {
+            b = ((this.viewerHeight) / m);
+            t = e * b
+        }
+        if (this.viewerWidth < t) {
+            v = (this.viewerWidth) / e
+        } else {
+            v = b
+        }
+        break;
+    case "FitToWidth":
+        if (this.viewerWidth < e) {
+            v = (this.viewerWidth / e)
+        } else {
+            v = 1
+        }
+        if (this.viewerHeight < (v * m)) {
+            v = v - (SCROLL.width / e)
+        }
+        break;
+    case "FitToHeight":
+        if (this.viewerHeight < m) {
+            v = (this.viewerHeight / m)
+        } else {
+            v = 1
+        }
+        if (this.viewerWidth < (v * e)) {
+            v = v - (SCROLL.width / m)
+        }
+        break;
+    case "ScanResolution":
+        var d = e;
+        var l = m;
+        var g = this.ImageInfo.Xdpi;
+        var h = this.ImageInfo.Ydpi;
+        if (g != h) {
+            if (g > h) {
+                l = m * (g / h)
+            } else {
+                d = e * (h / g)
+            }
+        }
+        var j = (d * g) / (e * 96);
+        var r = (l * h) / (m * 96);
+        v = j > r ? j : r;
+        this.isScanResolution = true;
+        break;
+    default:
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.ZoomFlagErrMsg)
+    }
+    if (v) {
+        return v
+    }
+};
+ViewerManager.prototype.GetNextZoomLevel = function () {
+    var b = 0;
+    var a = this.ZoomFactor * 100;
+    while ((a >= RESIZE_PERCENTAGES[b]) && (b < RESIZE_PERCENTAGES.length)) {
+        b++
+    }
+    if (b == RESIZE_PERCENTAGES.length) {
+        return -1
+    } else {
+        return RESIZE_PERCENTAGES[b]
+    }
+};
+ViewerManager.prototype.GetPreviousZoomLevel = function () {
+    var b = -1;
+    var c = 0;
+    var a = this.ZoomFactor * 100;
+    while ((a > RESIZE_PERCENTAGES[c]) && (c < RESIZE_PERCENTAGES.length)) {
+        b = c;
+        c++
+    }
+    if (b == -1) {
+        return b
+    } else {
+        return RESIZE_PERCENTAGES[b]
+    }
+};
+ViewerManager.prototype.ZoomIn = function () {
+    var a = this.GetNextZoomLevel() ;
+    if (a != -1) {
+        this.setZoomFromPercentage(a)
+    }
+};
+ViewerManager.prototype.ZoomOut = function () {
+    var a = this.GetPreviousZoomLevel();
+    if (a != -1) {
+        this.setZoomFromPercentage(a)
+    }
+};
+ViewerManager.prototype.LoadAnnotation = function (a) {
+    if (this.bAnnotationDisplay === true) {
+        var b = this;
+        this.AnnotationManager.LoadAnnotationPromise(a).then(function (c) {
+            b.pageAndAnntotationLoadCallback("annotation")
+        }, function (c) {
+            b.pageAndAnntotationLoadCallback(c)
+        })
+    }
+};
+ViewerManager.prototype.Rotate = function (b) {
+    this.Angle = this.Angle + b;
+    if (this.Angle < 0) {
+        this.Angle = 360 + this.Angle
+    }
+    this.Angle = this.Angle % 360;
+    var a = [0, 1, -1, 0, 0, 0];
+    if (b == -90) {
+        this.operationList.push(IMAGE_OPERATION.IMAGE_ROTATED_LEFT);
+        this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_ROTATED_LEFT).toString())
+    } else {
+        if (b == 90) {
+            this.operationList.push(IMAGE_OPERATION.IMAGE_ROTATED_RIGHT);
+            this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_ROTATED_RIGHT).toString());
+            a = [0, -1, 1, 0, 0, 0]
+        } else {
+            if (b == 180) {
+                this.operationList.push(IMAGE_OPERATION.IMAGE_ROTATED_180);
+                this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_ROTATED_180).toString());
+                a = [-1, 0, 0, -1, 0, 0]
+            }
+        }
+    }
+    this.currentVector = this.matrixMultiply(a, this.currentVector);
+    if (this.zoomLens != null) {
+        this.zoomLens.invCanvas = undefined;
+        this.zoomLens.Show()
+    }
+    this.renderPage(isImagePDF ? null : this.PdfManager.savedImage, false);
+    let val = document.getElementById("zoomDropList").value;
+    if (val === "Fit To Page" || val === "Fit To Height" || val === "Fit To Width") {
+        SetZoomPercentage(val)
+    }
+    this.isTextLayerApplicable()
+};
+ViewerManager.prototype.ImageResizeAndRotateSucessHandler = function () {
+    this.CurrentPage = this.PageRequested;
+    ShowLoadingBanner(false, "");
+    if (VIEWER_MANAGER.FastNavState === 0) {
+        DisplayPageNumber(this.CurrentPage)
+    }
+    if (this.brightnessLevel !== 0) {
+        this.ShowChangedBrightness(this.ImageCanvas, this.brightnessLevel)
+    }
+    if (this.isAnnotationDisplayed()) {
+        this.showhideAnnotion(true);
+        DOM.addBookmark.classList.remove("ui-state-disabled")
+    } else {
+        DOM.addBookmark.classList.add("ui-state-disabled")
+    }
+    if (this.InitialZoomLensStatus && this.zoomLens == null) {
+        OpenZoomLens()
+    }
+};
+ViewerManager.prototype.ZoomLens = function (b, a) {
+    this.zoomLens = new ZoomLens(b, a, this);
+    this.zoomLens.show()
+};
+ViewerManager.prototype.enableOrDisablePrinting = function (b) {
+    var a = IDMAP.li_print;
+    if (b === true) {
+        $("#menu_print").addClass("ui-state-disabled");
+        $("#menu_print *").css("pointer-events", "none");
+        $("#menu_print").css("pointer-events", "none");
+        UTIL.disableButton(a);
+        return false
+    } else {
+        $("#menu_print").removeClass("ui-state-disabled");
+        $("#menu_print *").css("pointer-events", "auto");
+        $("#menu_print").css("pointer-events", "auto");
+        UTIL.enableButton(a);
+        return true
+    }
+};
+ViewerManager.prototype.LoadStampAnnotationINI = function () {
+    if (this.bAnnotationDisplay === true) {
+        this.AnnotationManager.LoadStampAnnotationINI(this.StampINIPath)
+    }
+};
+ViewerManager.prototype.getCurrentPage = function () {
+    return this.CurrentPage
+};
+ViewerManager.prototype.showFirstPage = function () {
+    this.ShowPage(1)
+};
+ViewerManager.prototype.showLastPage = function () {
+    this.ShowPage(this.NumberOfPages)
+};
+ViewerManager.prototype.showNextPage = function () {
+    this.ShowPage(this.CurrentPage + 1)
+};
+ViewerManager.prototype.showPreviousPage = function () {
+    this.ShowPage(this.CurrentPage - 1)
+};
+ViewerManager.prototype.getCroppedImage = function (A, D, B, c, b, l, q) {
+    var f = ((typeof D != "undefined") && (typeof B != "undefined") && (typeof c != "undefined") && (typeof b != "undefined")) && ((D !== null) && (B !== null) && (c !== null) && (b !== null));
+    var x = (this.AnnotationManager.selection.length == 1 && (this.AnnotationManager.selection.length !== 0) && (this.AnnotationManager.selection[0].type == "DZONE"));
+    if (this.bValidateURLContext && !this.validateURLContext(A)) {
+        Logger.log(Logger.ERROR, "invalid context:" + A);
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.InvalidUrlContext || "URL has been blocked due to security reasons");
+        return -1
+    }
+    var g = this.ImageInfo.Xdpi;
+    var m = this.ImageInfo.Ydpi;
+    var r = this.ImageInfo.ImageHeight;
+    var C = this.ImageInfo.ImageWidth;
+    var n = this.ImageCanvas.width / C;
+    var u = this.ImageCanvas.height / r;
+    if (isImagePDF) {
+        n = 1;
+        u = 1
+    }
+    var w;
+    var t;
+    var j;
+    var p;
+    if (f) {
+        D = parseFloat(D);
+        B = parseFloat(B);
+        c = parseFloat(c);
+        b = parseFloat(b);
+        if (isNaN(D) || isNaN(B) || isNaN(c) || isNaN(b)) {
+            opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.ImageCropCoordinateErrorMsg);
+            return -1
+        }
+        D = (D < 0) ? 0 : D;
+        D = (D > C) ? C : D;
+        B = (B < 0) ? 0 : B;
+        B = (B > r) ? r : B;
+        c = (c < 0) ? 0 : c;
+        c = (c > C) ? C : c;
+        b = (b < 0) ? 0 : b;
+        b = (b > r) ? r : b;
+        w = D;
+        t = B;
+        j = (c - D < 0) ? 0 : (c - D);
+        p = (b - B < 0) ? 0 : (b - B);
+        w *= n;
+        t *= u;
+        j *= n;
+        p *= u
+    } else {
+        if (x) {
+            if (this.AnnotationManager.selection.length == 1) {
+                w = (this.AnnotationManager.selection[0].x < 0) ? 0 : this.AnnotationManager.selection[0].x;
+                t = (this.AnnotationManager.selection[0].y < 0) ? 0 : this.AnnotationManager.selection[0].y;
+                j = ((this.AnnotationManager.selection[0].x + this.AnnotationManager.selection[0].w) < this.ImageCanvas.width) ? this.AnnotationManager.selection[0].w : (this.ImageCanvas.width - this.AnnotationManager.selection[0].x);
+                p = ((this.AnnotationManager.selection[0].y + this.AnnotationManager.selection[0].h) < this.ImageCanvas.height) ? this.AnnotationManager.selection[0].h : (this.ImageCanvas.height - this.AnnotationManager.selection[0].y);
+                w *= n;
+                t *= u;
+                j *= n;
+                p *= u
+            }
+        } else {
+            if ((this.AnnotationManager.selection.length == 0) || (this.AnnotationManager.selection[0].type != "BOX")) {
+                opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.CropImageSelectionErrorMsg)
+            } else {
+                opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.CropImageParameterErrorMsg)
+            }
+            return -1
+        }
+    }
+    if ((j > 0) && (p > 0)) {
+        var v = document.createElement("canvas");
+        var d = this.ZoomFactor;
+        if (d < 1) {
+            d = 1
+        }
+        w = w + d;
+        t = t + d;
+        j = j - 2 * d;
+        p = p - 2 * d;
+        v.width = j;
+        v.height = p;
+        var o = v.getContext("2d");
+        var z;
+        if (this.IsAnnotationBurningRequired === true) {
+            var F = document.createElement("canvas");
+            F.width = C;
+            F.height = r;
+            var e = F.getContext("2d");
+            e.drawImage(this.PdfManager.savedImage, 0, 0, C, r, 0, 0, F.width, F.height);
+            this.AnnotationManager.DrawScaledAnnotation(F, this.AnnotationManager.annotationList, g / this.ScreenDPI, m / this.ScreenDPI);
+            this.applyCurrentTransformation(F);
+            z = e.getImageData(w, t, j, p)
+        } else {
+            z = (this.PdfManager.savedImage.getContext("2d")).getImageData(w, t, j, p)
+        }
+        o.putImageData(z, 0, 0);
+        var h = 1;
+        var s = this.cropImageMinQuality;
+        if (l != null && l != undefined) {
+            s = parseFloat(l, 10)
+        }
+        var y = this.CroppedImageSize;
+        if (q != null && q != undefined) {
+            y = parseInt(q, 10)
+        }
+        var a = dataUriToBlob(v.toDataURL("image/jpeg", h));
+        if ((a.size / 1024) > y) {
+            var H = s;
+            var k = h;
+            var E;
+            while (H < k) {
+                E = (H + k) / 2;
+                a = dataUriToBlob(v.toDataURL("image/jpeg", E));
+                if ((a.size / 1024) > y) {
+                    k = E - 0.01
+                } else {
+                    if ((a.size / 1024) < y) {
+                        H = E + 0.01
+                    }
+                }
+                if ((a.size) / 1024 === y) {
+                    break
+                }
+            }
+            if ((a.size / 1024) > y) {
+                if (H > s) {
+                    a = dataUriToBlob(v.toDataURL("image/jpeg", H));
+                    if ((a.size / 1024) > y) {
+                        a = dataUriToBlob(v.toDataURL("image/jpeg", s));
+                        if ((a.size / 1024) > y) {
+                            opallAlert(OPALL_ICONS.ERROR.id, (OPALL_MESSAGE.MaxCropSizeAllowed || "Maximum zone size set : ") + y + " KB <br>" + (OPALL_MESSAGE.CurrentCropSize || " Selected zone size : ") + Math.ceil(a.size / 1024) + " KB");
+                            return -1
+                        }
+                    }
+                } else {
+                    if ((a.size / 1024) > y) {
+                        opallAlert(OPALL_ICONS.ERROR.id, (OPALL_MESSAGE.MaxCropSizeAllowed || "Maximum zone size set : ") + y + " KB <br>" + (OPALL_MESSAGE.CurrentCropSize || " Selected zone size : ") + Math.ceil(a.size / 1024) + " KB");
+                        return -1
+                    }
+                }
+            }
+        }
+        var G = this.sync_ajax_postcall(A, a);
+        return G
+    } else {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.ImageCropCoordinateErrorMsg);
+        return -1
+    }
+};
+ViewerManager.prototype.GetStampImage = function (b, c, a) {
+    this.PdfManager.getStampImage(b, c, a)
+};
+ViewerManager.prototype.SetStampImage = function (b, a, d) {
+    var h = this;
+    var j;
+    if (d !== null && a == -1) {
+        d.image = b;
+        if (this.zoomLens) {
+            this.zoomLens.invCanvas = undefined;
+            this.zoomLens.stampDrawn = true;
+            var g = this.xCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Xdpi);
+            var f = this.yCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Ydpi);
+            var c = g * this.PdfManager.savedImage.width;
+            var e = f * this.PdfManager.savedImage.height;
+            this.zoomLens.focusX = (g + c) / 2;
+            this.zoomLens.focusY = (f + e) / 2
+        }
+        h.AnnotationManager.drawImmediate()
+    } else {
+        if (d !== null && a != -1) {
+            j = new StampImageObj();
+            j.id = a;
+            j.image = b;
+            j.reference = 1;
+            h = this;
+            d.image.onload = function () {
+                d.w = this.width;
+                d.h = this.height;
+                h.AnnotationManager.stampImageObjectList[a - 1] = j;
+                h.AnnotationManager.annotationList.push(d);
+                if (this.zoomLens) {
+                    this.zoomLens.invCanvas = undefined;
+                    this.zoomLens.stampDrawn = true;
+                    var l = this.xCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Xdpi);
+                    var k = this.yCurrentZoomFactor * (this.ScreenDPI / this.ImageInfo.Ydpi);
+                    var m = l * this.PdfManager.savedImage.width;
+                    var n = k * this.PdfManager.savedImage.height;
+                    this.zoomLens.focusX = (l + m) / 2;
+                    this.zoomLens.focusY = (k + n) / 2
+                }
+                h.AnnotationManager.drawImmediate()
+            };
+            d.image.src = b.src
+        } else {
+            j = new StampImageObj();
+            j.id = a;
+            j.image = b;
+            j.reference = 1;
+            this.AnnotationManager.stampImageObjectList[a - 1] = j
+        }
+    }
+};
+ViewerManager.prototype.DrawFreeText = function () {};
+ViewerManager.prototype.GetImageStampAnnotationList = function () {
+    return this.AnnotationManager.imgStampSelectionList
+};
+ViewerManager.prototype.GetTextStampAnnotationList = function () {
+    return this.AnnotationManager.textStampSelectionList
+};
+ViewerManager.prototype.Negate = function () {
+    if (!isImagePDF) {
+        return
+    }
+    this.operationList.push(IMAGE_OPERATION.IMAGE_NEGATED);
+    this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_NEGATED).toString());
+    if (this.isImageNegated == true) {
+        this.isImageNegated = false
+    } else {
+        this.isImageNegated = true
+    }
+    if (VIEWER_MANAGER.zoomLens != null) {
+        this.zoomLens.invCanvas = undefined;
+        this.zoomLens.Show()
+    }
+    this.renderPage(null, false)
+};
+ViewerManager.prototype.getRotatedImage = function (f, g, e) {
+    var c;
+    var a;
+    var b = document.createElement("canvas");
+    var d = b.getContext("2d");
+    d.save();
+    if (g == 90) {
+        b.width = f.height;
+        b.height = f.width;
+        c = 0;
+        a = -f.height;
+        d.rotate(90 * Math.PI / 180);
+        d.drawImage(f, 0, 0, f.width, f.height, c, a, b.height, b.width)
+    } else {
+        if (g == 180) {
+            b.width = f.width;
+            b.height = f.height;
+            c = -f.width;
+            a = -f.height;
+            d.rotate(180 * Math.PI / 180);
+            d.drawImage(f, 0, 0, f.width, f.height, c, a, b.width, b.height)
+        } else {
+            if (g == 270) {
+                b.width = f.height;
+                b.height = f.width;
+                c = -f.width;
+                a = 0;
+                d.rotate(270 * Math.PI / 180);
+                d.drawImage(f, 0, 0, f.width, f.height, c, a, b.height, b.width)
+            }
+        }
+    }
+    d.restore();
+    return b
+};
+ViewerManager.prototype.horizontalFlip = function () {
+    if (!isImagePDF) {
+        return
+    }
+    this.horizontallyFlipped = !this.horizontallyFlipped;
+    this.isTextLayerApplicable();
+    var a = this.PdfManager.savedImage.getContext("2d");
+    this.operationList.push(IMAGE_OPERATION.IMAGE_FLIPPED_HORIZONTALLY);
+    this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_FLIPPED_HORIZONTALLY).toString());
+    this.currentVector = this.matrixMultiply([-1, 0, 0, 1, 0, 0], this.currentVector);
+    if (this.zoomLens != null) {
+        this.zoomLens.invCanvas = undefined;
+        this.zoomLens.Show()
+    }
+    this.renderPage(null, false)
+};
+ViewerManager.prototype.drawImage = function (b) {
+    var d = document.createElement("img");
+    var c = this.ImageCanvas;
+    c.width = b.width;
+    c.height = b.height;
+    var a = c.getContext("2d");
+    a.drawImage(b, 0, 0, b.width, b.height, 0, 0, c.width, c.height)
+};
+ViewerManager.prototype.verticalFlip = function () {
+    if (!isImagePDF) {
+        return
+    }
+    this.verticallyFlipped = !this.verticallyFlipped;
+    this.isTextLayerApplicable();
+    var a = this.PdfManager.savedImage.getContext("2d");
+    this.currentVector = this.matrixMultiply([1, 0, 0, -1, 0, 0], this.currentVector);
+    this.operationList.push(IMAGE_OPERATION.IMAGE_FLIPPED_VERTICALLY);
+    this.documentOperationList[this.CurrentPage].push((IMAGE_OPERATION.IMAGE_FLIPPED_VERTICALLY).toString());
+    if (this.zoomLens != null) {
+        this.zoomLens.invCanvas = undefined;
+        this.zoomLens.Show()
+    }
+    this.renderPage(null, false)
+};
+ViewerManager.prototype.autoDeskew = function () {
+    if (!isImagePDF) {
+        return
+    }
+    showLoadBar();
+    setTimeout(function () {
+        VIEWER_MANAGER.Deskew();
+        hideLoadBar()
+    }, 15)
+};
+ViewerManager.prototype.Deskew = function () {
+    if (this.bDeskewed == true) {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.SkewErrorMsg);
+        return
+    }
+    var b = CanvasUtil.getSkewAngle(this.PdfManager.savedImage);
+    var a = IMAGE_OPERATION.IMAGE_DESKEW + ":" + b;
+    this.operationList.push(a);
+    this.documentOperationList[this.CurrentPage].push(a);
+    this.PdfManager.savedImage = VIEWER_MANAGER.customRotate(this.PdfManager.savedImage, b);
+    if (this.zoomLens) {
+        this.zoomLens.invCanvas = undefined
+    }
+    this.renderPage()
+};
+ViewerManager.prototype.prepareImageForOperation = function (d, e, c) {
+    var b = document.createElement("img");
+    b.onload = function () {
+        c(this)
+    };
+    e = (e % 360);
+    if (e % 90 !== 0) {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.RotateAngleErrMsg);
+        return null
+    }
+    if ((e === 0) || (e == 360)) {
+        c(d);
+        return
+    }
+    var a = this.getRotatedImage(d, e);
+    b.width = a.width;
+    b.height = a.height;
+    b.src = a.toDataURL("image/jpeg", 1)
+};
+ViewerManager.prototype.prepareImageForSaving = function (d, e, c) {
+    var b = document.createElement("img");
+    b.onload = function () {
+        c(this)
+    };
+    e = e % 360;
+    if (e % 90 !== 0) {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.RotateAngleErrMsg);
+        return null
+    }
+    if ((e === 0) || (e == 360)) {
+        c(d);
+        return
+    }
+    e = 360 - e;
+    var a = this.getRotatedImage(d, e);
+    b.width = a.width;
+    b.height = a.height;
+    b.src = a.toDataURL("image/jpeg", 1)
+};
+ViewerManager.prototype.customRotate = function (c, b) {
+    if (b === 0) {
+        return c
+    }
+    var f = document.createElement("img");
+    var a = c.width;
+    var h = c.height;
+    var e,
+    d;
+    var j = document.createElement("canvas");
+    var g = j.getContext("2d");
+    g.save();
+    if (b > 0) {
+        e = h * Math.sin(b * Math.PI / 180) * Math.cos(b * Math.PI / 180);
+        d = -1 * h * Math.sin(b * Math.PI / 180) * Math.sin(b * Math.PI / 180);
+        j.width = (a * Math.cos(b * Math.PI / 180)) + (h * Math.sin(b * Math.PI / 180));
+        j.height = (h * Math.cos(b * Math.PI / 180)) + (a * Math.sin(b * Math.PI / 180))
+    } else {
+        e = -1 * a * Math.sin(-b * Math.PI / 180) * Math.sin(-b * Math.PI / 180);
+        d = a * Math.sin(-b * Math.PI / 180) * Math.cos(-b * Math.PI / 180);
+        j.width = (a * Math.cos(-b * Math.PI / 180)) + (h * Math.sin(-b * Math.PI / 180));
+        j.height = (h * Math.cos(-b * Math.PI / 180)) + (a * Math.sin(-b * Math.PI / 180))
+    }
+    g.rotate(b * Math.PI / 180);
+    g.fillStyle = "#FFFFFF";
+    g.fillRect(-a / 2, -h, 4 * a, 4 * h);
+    g.drawImage(c, 0, 0, a, h, e, d, a, h);
+    g.restore();
+    return j
+};
+ViewerManager.prototype.SetZoneViewPosition = function (d, c, b, a) {
+    Logger.log(Logger.INFO, "setZoneVIewPosition, newTop = ", c);
+    if (this.bSinglePageScrollMode) {
+        if (d > 0) {
+            $("#viewArea").scrollLeft(d)
+        }
+        if (c > 0) {
+            if (c > DOM.viewArea.clientHeight) {
+                var e = this.ImageCanvas.height - DOM.viewArea.clientHeight;
+                var f = this.ImageCanvas.height - c;
+                if (f < e) {
+                    c = e - 1
+                }
+            }
+            $("#viewArea").scrollTop(parseInt(DOM.bothCanvas.style.top, 10) + c)
+        }
+    } else {
+        $("#viewArea").scrollLeft(d);
+        $("#viewArea").scrollTop(c)
+    }
+};
+ViewerManager.prototype.IsOperationApplicable = function (b) {
+    if (this.AnnotationManager.annotationList.length === 0 || (document.getElementById("annotCanvas").style.visibility == "hidden")) {
+        return true
+    }
+    var a;
+    if (this.isAnnotationDisplayed()) {
+        if (b == "rotate") {
+            a = confirm(OPALL_ERR_MESSAGE.RotateImageErrorMsg)
+        } else {
+            a = confirm(OPALL_ERR_MESSAGE.FlipImageErrorMsg)
+        }
+        return a
+    }
+    return true
+};
+ViewerManager.prototype.showLens = function (c) {
+    this.zoomLens = null;
+    var f = 1;
+    this.AnnotationManager.lastZoneID = -1;
+    if (this.InitialZoomLensPercentage) {
+        var e = parseInt(this.InitialZoomLensPercentage, 10);
+        if ((e % 25 === 0) && (e >= 25) && (e <= 400)) {
+            f = e / 100
+        }
+    }
+    var j = 200;
+    var a = 200;
+    var g = this.viewerWidth > this.ImageCanvas.width ? this.ImageCanvas.width : this.viewerWidth;
+    g += parseInt($("#viewArea").scrollLeft(), 10);
+    var h = this.viewerHeight > this.ImageCanvas.height ? this.ImageCanvas.height : this.viewerHeight;
+    h += parseInt($("#viewArea").scrollTop(), 10);
+    var d = g / 2;
+    var b = h / 2;
+    this.zoomLens = new ZoomLens(this, c, j, a, f, d, b, false);
+    this.zoomLens.Show()
+};
+ViewerManager.prototype.ShowZoomLensForZone = function (b, q, n, e) {
+    var l = b + (n / 2);
+    var k = q + (e / 2);
+    var r = parseInt(this.ZoomLensForZoning[0], 10);
+    var a = parseInt(this.ZoomLensForZoning[1], 10);
+    if (r < ZOOMLENS_MIN_DIMENSION.width) {
+        r = ZOOMLENS_MIN_DIMENSION.width
+    }
+    if (a < ZOOMLENS_MIN_DIMENSION.height) {
+        a = ZOOMLENS_MIN_DIMENSION.height
+    }
+    var p = 1;
+    var d = parseInt(DOM.viewArea.style.width, 10);
+    var o = parseInt(DOM.viewArea.style.height, 10);
+    if (this.InitialZoomLensPercentage) {
+        var m = parseInt(this.InitialZoomLensPercentage, 10);
+        if ((m % 25 === 0) && (m >= 25) && (m <= 400)) {
+            p = m / 100
+        }
+    }
+    if ((this.IsZoomWindowChangeRequired) && (this.IsZoomWindowChangeRequired === true)) {
+        r = this.zoneAreaWidth = n * (p / this.ZoomFactor) + this.AnnotationManager.eThickness;
+        a = this.zoneAreaHeight = e * (p / this.ZoomFactor) + this.AnnotationManager.eThickness;
+        if (r < ZOOMLENS_MIN_DIMENSION.width) {
+            r = ZOOMLENS_MIN_DIMENSION.width
+        }
+        if (a < ZOOMLENS_MIN_DIMENSION.height) {
+            a = ZOOMLENS_MIN_DIMENSION.height
+        }
+    } else {
+        this.zoneAreaWidth = r;
+        this.zoneAreaHeight = a
+    }
+    if (this.zoomLens) {
+        this.zoomLens.Show();
+        this.zoomLens.SetFocusArea(l, k);
+        if ((this.IsZoomWindowChangeRequired) && (this.IsZoomWindowChangeRequired === true)) {
+            this.zoomLens.ReSize(r, a, this.zoomLens)
+        }
+    } else {
+        var j = {
+            lensDiv: document.getElementById("ZoomLens"),
+            titleBar: document.getElementById("ZoomLensTitleBar"),
+            titleText: document.getElementById("ZoomLensTitleText"),
+            closeDiv: document.getElementById("ZooomLensClose"),
+            canvas: document.getElementById("zoomLensCanvas"),
+            dragDiv: document.getElementById("zoomLensDragDiv"),
+            mobileDiv: document.getElementById("ZooomLensMobile")
+        };
+        var g = parseInt(this.ZoomLensForZoning[2], 10);
+        var h = parseInt($("#viewArea").scrollLeft(), 10) + (d / 2);
+        var f = parseInt($("#viewArea").scrollTop(), 10);
+        var c;
+        if (g == 1) {
+            c = o / 3 - (a / 2);
+            if (c > 0) {
+                f = f + c
+            }
+        } else {
+            if (g == 2) {
+                c = 2 * o / 3 - (a / 2);ns
+                if (c > 0) {
+                    f = f + c
+                }
+            } else {
+                if (g == 3) {
+                    c = o - (a / 2);
+                    if (c > 0) {
+                        f = f + c
+                    }
+                } else {
+                    if (g != 4) {
+                        Logger.log(Logger.INFO, "Invalid value for - Zoom Lens For Zoning ")
+                    }
+                }
+            }
+        }
+        j.lensDiv.style.top = f + "px";
+        j.lensDiv.style.left = h + "px";
+        this.zoomLens = new ZoomLens(this, j, r, a, p, l, k, false);
+        this.zoomLens.Show()
+    }
+};
+ViewerManager.prototype.setDefaultPropertyDialog = function () {
+    if (this.AnnotationManager.selection.length !== 0) {
+        if ($("#propertiesOption").hasClass("ui-state-disabled")) {
+            return
+        }
+        hideContextMenu();
+        showDialog("#annotationPropertiesDialog");
+        UTILS.adjustVertToolbars("#annotationProperties", "#annotationPropertiesContainer", $("#ConformationButtons").height(), "rgba(204, 204, 204, 0.8)");
+        return
+    } else {
+        hideContextMenu();
+        var a = document.getElementById("contextMenu").style.top;
+        var b = document.getElementById("contextMenu").style.left;
+        this.showImagePropertiesDialog(b, a);
+        UTILS.adjustVertToolbars("#properties", "#properties_container", 0, "rgba(204, 204, 204, 0.8)")
+    }
+};
+ViewerManager.prototype.showImagePropertiesDialog = function (a, c) {
+    var b = document.getElementById("PropertiesDialog");
+    b.style.top = c;
+    b.style.left = a;
+    showDialog("#PropertiesDialog");
+    document.getElementById("widthInPixels").innerHTML = VIEWER_MANAGER.ImageInfo.ImageWidth;
+    document.getElementById("heightInPixels").innerHTML = VIEWER_MANAGER.ImageInfo.ImageHeight;
+    document.getElementById("heightInInches").innerHTML = Math.round((VIEWER_MANAGER.ImageInfo.ImageHeight / VIEWER_MANAGER.ImageInfo.Ydpi) * 100) / 100;
+    document.getElementById("widthInInches").innerHTML = Math.round((VIEWER_MANAGER.ImageInfo.ImageWidth / VIEWER_MANAGER.ImageInfo.Xdpi) * 100) / 100;
+    document.getElementById("hDPI").innerHTML = parseInt(isImagePDF ? VIEWER_MANAGER.ImageInfo.Xdpi : PDF_DPI, 10);
+    document.getElementById("vDPI").innerHTML = parseInt(isImagePDF ? VIEWER_MANAGER.ImageInfo.Ydpi : PDF_DPI, 10);
+    if (PDFJS.ImageDetails.bpp == 1) {
+        document.getElementById("BPP").innerHTML = "1";
+        document.getElementById("ImageType").innerHTML = IMAGETYPE.bw
+    } else {
+        if (PDFJS.ImageDetails.imageType == "DeviceGray" || PDFJS.ImageDetails.colorSpace == "CalGray") {
+            document.getElementById("BPP").innerHTML = "8";
+            document.getElementById("ImageType").innerHTML = IMAGETYPE.gray
+        } else {
+            if (PDFJS.ImageDetails.imageType == "DeviceCMYK") {
+                document.getElementById("BPP").innerHTML = "32";
+                document.getElementById("ImageType").innerHTML = IMAGETYPE.color
+            } else {
+                if (PDFJS.ImageDetails.imageType == "DeviceRGB" || PDFJS.ImageDetails.colorSpace == "CalRGB") {
+                    document.getElementById("BPP").innerHTML = "24";
+                    document.getElementById("ImageType").innerHTML = IMAGETYPE.color
+                } else {
+                    if (PDFJS.ImageDetails.imageType == "Indexed") {
+                        document.getElementById("ImageType").innerHTML = IMAGETYPE.color
+                    }
+                }
+            }
+        }
+    }
+    if (!isImagePDF) {
+        DOM.PropertiesDialog_bitDepthTR.style.display = "none";
+        DOM.PropertiesDialog_imageTypeTR.style.display = "none"
+    } else {
+        DOM.PropertiesDialog_bitDepthTR.style.display = "table-row";
+        DOM.PropertiesDialog_imageTypeTR.style.display = "table-row"
+    }
+};
+ViewerManager.prototype.onOkChangeAnnotationProperties = function () {
+    if (this.AnnotationManager.selection.length == 1) {
+        this.changeAnnotationProperties(this.AnnotationManager.selection[0]);
+        this.AnnotationManager.draw();
+        return
+    } else {
+        hideDialog("#annotationPropertiesDialog")
+    }
+};
+ViewerManager.prototype.changeAnnotationProperties = function (e) {
+    var m = this.AnnotationManager.selectionIndex[0];
+    var l = {
+        operationType: OPERATION_TYPE.PROPERTIES_CHANGE,
+        defaultPropertiesForAllAnnot: null,
+        selectionUndo: jQuery.extend(true, {}, this.AnnotationManager.selection[0]),
+        positionUndo: m,
+        selectionRedo: null,
+        positionRedo: null
+    };
+    var o;
+    var s;
+    var h;
+    var r;
+    var n;
+    var c;
+    var p;
+    var k;
+    var j;
+    var d;
+    switch (e.type) {
+    case "LNE":
+    case "DLNE":
+    case "LALNE":
+    case "TALNE":
+    case "DALNE":
+    case "HLT":
+    case "BOX":
+    case "FRECT":
+    case "ELLI":
+    case "FELLI":
+    case "FRH":
+    case "WIPOUT":
+        var b;
+        var q = document.getElementById("penThickness");
+        b = parseInt(q.options[q.selectedIndex].value, 10);
+        o = "#" + document.getElementById("ForeColorSelection").value;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            l.defaultPropertiesForAllAnnot = true;
+            this.AnnotationManager.SetAnnotationPenColor(o);
+            this.AnnotationManager.SetAnnotationThickness(b);
+            this.AnnotationManager.SetFillColor(o);
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, b);
+            this.AnnotationManager.ChangeSelectedAnnotationFillColor(o)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.SetDefaultColorForThisAnnotationType(e.type, o);
+                this.AnnotationManager.SetFillColorForSingleType(e.type, o);
+                this.AnnotationManager.SetThicknessForSingleType(e.type, b)
+            }
+            l.defaultPropertiesForAllAnnot = false;
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, b);
+            this.AnnotationManager.ChangeSelectedAnnotationFillColor(o)
+        }
+        this.PenThickness = b;
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "TXTSTAMP":
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "IMGSTAMP":
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "STICKYNOTE":
+        o = "#" + document.getElementById("ForeColorSelection").value;
+        var a = "#" + document.getElementById("BackColorSelection").value;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            this.AnnotationManager.SetAnnotationPenColor(o);
+            this.AnnotationManager.SetStickyNoteFillColor(a);
+            this.AnnotationManager.SetFillColor(o);
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1);
+            this.AnnotationManager.ChangeSelectedAnnotationFillColor(a)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.SetDefaultColorForThisAnnotationType(e.type, o);
+                this.AnnotationManager.SetStickyNoteFillColor(a)
+            }
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1);
+            this.AnnotationManager.ChangeSelectedAnnotationFillColor(a)
+        }
+        s = document.getElementById("fontName");
+        h = document.getElementById("fontSize");
+        r = document.getElementById("fontStyle");
+        n = s.options[s.selectedIndex].value;
+        c = parseInt(h.options[h.selectedIndex].value, 10);
+        p = r.options[r.selectedIndex].value;
+        k = 0;
+        j = 0;
+        d = 0;
+        if (p == "Bold") {
+            k = 1
+        } else {
+            if (p == "Italic") {
+                k = 2
+            }
+        }
+        j = (document.getElementById("underline").checked === true) ? 1 : 0;
+        d = (document.getElementById("strikeOut").checked === true) ? 1 : 0;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            this.AnnotationManager.ChangeAllTextProperties(k, j, d, n, c);
+            this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.SetDefaultColorForThisAnnotationType(e.type, o);
+                this.AnnotationManager.ChangeStickyNoteProperties(k, j, d, n, c)
+            }
+            this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+        }
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "ATTACHNOTE":
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "FREETXT":
+        o = "#" + document.getElementById("ForeColorSelection").value;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            this.AnnotationManager.SetAnnotationPenColor(o);
+            this.AnnotationManager.SetFillColor(o);
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.SetDefaultColorForThisAnnotationType(e.type, o)
+            }
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1)
+        }
+        s = document.getElementById("fontName");
+        h = document.getElementById("fontSize");
+        r = document.getElementById("fontStyle");
+        n = s.options[s.selectedIndex].value;
+        c = parseInt(h.options[h.selectedIndex].value, 10);
+        p = r.options[r.selectedIndex].value;
+        k = 0;
+        j = 0;
+        d = 0;
+        if (p == "Bold") {
+            k = 1
+        } else {
+            if (p == "Italic") {
+                k = 2
+            }
+        }
+        j = (document.getElementById("underline").checked === true) ? 1 : 0;
+        d = (document.getElementById("strikeOut").checked === true) ? 1 : 0;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            this.AnnotationManager.ChangeAllTextProperties(k, j, d, n, c);
+            this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.ChangeFreeTextProperties(k, j, d, n, c)
+            }
+            this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+        }
+        hideDialog("#annotationPropertiesDialog");
+        break;
+    case "HLINK":
+        o = "#" + document.getElementById("ForeColorSelection").value;
+        if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+            this.AnnotationManager.SetAnnotationPenColor(o);
+            this.AnnotationManager.SetFillColor(o);
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1)
+        } else {
+            if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                this.AnnotationManager.SetDefaultColorForThisAnnotationType(e.type, o)
+            }
+            this.AnnotationManager.ChangeSelectedAnnotationProperties(o, 1)
+        }
+        s = document.getElementById("fontName");
+        h = document.getElementById("fontSize");
+        r = document.getElementById("fontStyle");
+        n = s.options[s.selectedIndex].value;
+        c = parseInt(h.options[h.selectedIndex].value, 10);
+        p = r.options[r.selectedIndex].value;
+        k = 0;
+        j = 0;
+        d = 0;
+        if (p == "Bold") {
+            k = 1
+        } else {
+            if (p == "Italic") {
+                k = 2
+            }
+        }
+        j = (document.getElementById("underline").checked === true) ? 1 : 0;
+        d = (document.getElementById("strikeOut").checked === true) ? 1 : 0;
+        e.displayText = document.getElementById("hyperLinkEditName").value;
+        var g = document.getElementById("hyperLinkEditURL").value;
+        var f = 0;
+        for (f = 0; f < g.length; f++) {
+            if (g[f] != " ") {
+                break
+            }
+        }
+        g = g.substring(f, g.length);
+        if ((g.indexOf("http://") === 0) || (g.indexOf("https://") === 0) || (g.indexOf("ftp://") === 0)) {
+            e.linkId = g;
+            e.fontName = n;
+            e.font_style = k;
+            e.underline = j;
+            e.strikeOut = d;
+            e.fill = o;
+            e.fontSize = c;
+            if (document.getElementById("defaultPropertiesForAllAnnot").checked === true) {
+                this.AnnotationManager.ChangeFreeTextProperties(k, j, d, n, c);
+                this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+            } else {
+                if (document.getElementById("defaultPropertiesForCurrentAnnot").checked === true) {
+                    this.AnnotationManager.ChangeHlinkProperties(k, j, d, n, c)
+                }
+                this.AnnotationManager.ChangeSelectedFreeTextProperties(k, j, d, n, c)
+            }
+            hideDialog("#annotationPropertiesDialog")
+        } else {
+            opallAlert(OPALL_ICONS.WARNING.id, OPALL_ERR_MESSAGE.InvalidUrl)
+        }
+        break
+    }
+    l.selectionRedo = jQuery.extend(true, {}, this.AnnotationManager.selection[0]);
+    l.positionRedo = this.AnnotationManager.selectionIndex[0];
+    VIEWER_MANAGER.addToOperationsList(l)
+};
+ViewerManager.prototype.closeAnnotationPropertiesDialog = function () {
+    hideDialog("#annotationPropertiesDialog")
+};
+ViewerManager.prototype.getannotationTypeString = function (a) {
+    var b;
+    switch (a.type) {
+    case "LNE":
+        b = ANNOT_TYPES.line;
+        break;
+    case "DLNE":
+        b = ANNOT_TYPES.dashedline;
+        break;
+    case "LALNE":
+        b = ANNOT_TYPES.leadingArrow;
+        break;
+    case "TALNE":
+        b = ANNOT_TYPES.trailingArrow;
+        break;
+    case "DALNE":
+        b = ANNOT_TYPES.dblArrow;
+        break;
+    case "HLT":
+        b = ANNOT_TYPES.highlight;
+        break;
+    case "BOX":
+        b = ANNOT_TYPES.rect;
+        break;
+    case "FRECT":
+        b = ANNOT_TYPES.filledRect;
+        break;
+    case "ELLI":
+        b = ANNOT_TYPES.ellipse;
+        break;
+    case "FELLI":
+        b = ANNOT_TYPES.filledEllipse;
+        break;
+    case "FRH":
+        b = ANNOT_TYPES.freehand;
+        break;
+    case "WIPOUT":
+        b = ANNOT_TYPES.wipeout;
+        break;
+    case "TXTSTAMP":
+        b = ANNOT_TYPES.textStamp;
+        break;
+    case "IMGSTAMP":
+        b = ANNOT_TYPES.imageStamp;
+        break;
+    case "STICKYNOTE":
+        b = ANNOT_TYPES.stickynote;
+        break;
+    case "ATTACHNOTE":
+        b = ANNOT_TYPES.attachnote;
+        break;
+    case "FREETXT":
+        b = ANNOT_TYPES.freetext;
+        break;
+    case "HLINK":
+        b = ANNOT_TYPES.hyperlink;
+        break
+    }
+    return b
+};
+ViewerManager.prototype.setDialogBox = function (a) {
+    document.getElementById("AnnotationType").innerHTML = this.getannotationTypeString(a);
+    document.getElementById("GroupName").innerHTML = a.groupid;
+    document.getElementById("UserName").innerHTML = a.userid;
+    document.getElementById("DateTime").innerHTML = this.AnnotationManager.SetDateTimeFormat(a.timeorder, this.DateTimeFormat);
+    var b;
+    switch (a.type) {
+    case "LNE":
+    case "DLNE":
+    case "LALNE":
+    case "TALNE":
+    case "DALNE":
+    case "HLT":
+    case "BOX":
+    case "FRECT":
+    case "ELLI":
+    case "FELLI":
+    case "FRH":
+    case "WIPOUT":
+        if (a.type == "HLT" || a.type == "FRECT" || a.type == "FELLI" || a.type == "WIPOUT") {
+            $("#thickness").hide()
+        } else {
+            $("#thickness").show();
+            $("#penThickness").val(a.thicknessLevel)
+        }
+        document.getElementById("ForeColorSelection").color.fromString(a.fill);
+        $("#backgroundColorProperties").slideUp();
+        $("#fontProperties").slideUp();
+        $("#hyperlinkPropertyChange").slideUp();
+        $("#foreColorProperties").slideDown();
+        $("#setPropertiesForAnnotation").slideDown();
+        break;
+    case "TXTSTAMP":
+        $("#backgroundColorProperties").slideUp();
+        $("#fontProperties").slideUp();
+        $("#foreColorProperties").slideUp();
+        $("#setPropertiesForAnnotation").slideUp();
+        $("#hyperlinkPropertyChange").slideUp();
+        break;
+    case "IMGSTAMP":
+        $("#backgroundColorProperties").slideUp();
+        $("#fontProperties").slideUp();
+        $("#foreColorProperties").slideUp();
+        $("#setPropertiesForAnnotation").slideUp();
+        $("#hyperlinkPropertyChange").slideUp();
+        break;
+    case "STICKYNOTE":
+        $("#thickness").hide();
+        $("#Border").hide();
+        document.getElementById("ForeColorSelection").color.fromString(a.fill);
+        document.getElementById("BackColorSelection").color.fromString(a.fillColor);
+        $("#fontName").val(a.fontName);
+        $("#fontName").val(a.fontName);
+        b = parseInt(a.fontSize);
+        $("#fontSize").val(b);
+        $("#sampletext").css("font-style", "Normal");
+        $("#sampletext").css("font-weight", "Normal");
+        if (a.bold === 0 && a.italic === 0) {
+            $("#fontStyle").val("Normal")
+        } else {
+            if (a.bold == 1) {
+                $("#fontStyle").val("Bold");
+                $("#sampletext").css("font-weight", "Bold")
+            } else {
+                if (a.italic == 1) {
+                    $("#fontStyle").val("Italic");
+                    $("#sampletext").css("font-style", "Italic")
+                }
+            }
+        }
+        if (a.underline == 1) {
+            document.getElementById("underline").checked = true
+        } else {
+            document.getElementById("underline").checked = false
+        }
+        if (a.strikeOut == 1) {
+            document.getElementById("strikeOut").checked = true
+        } else {
+            document.getElementById("strikeOut").checked = false
+        }
+        $("#sampletext").css("font-family", "'" + a.fontName + "'");
+        $("#sampletext").css("font-size", b + "px");
+        $("#backgroundColorProperties").slideDown();
+        $("#fontProperties").slideDown();
+        $("#foreColorProperties").slideDown();
+        $("#setPropertiesForAnnotation").slideDown();
+        $("#hyperlinkPropertyChange").slideUp();
+        break;
+    case "ATTACHNOTE":
+        $("#backgroundColorProperties").slideUp();
+        $("#fontProperties").slideUp();
+        $("#foreColorProperties").slideUp();
+        $("#setPropertiesForAnnotation").slideUp();
+        $("#hyperlinkPropertyChange").slideUp();
+        break;
+    case "FREETXT":
+        $("#thickness").hide();
+        document.getElementById("ForeColorSelection").color.fromString(a.fill);
+        $("#fontName").val(a.fontName);
+        b = parseInt(a.fontSize);
+        $("#fontSize").val(b);
+        $("#sampletext").css("font-style", "Normal");
+        $("#sampletext").css("font-weight", "Normal");
+        if (a.bold === 0 && a.italic === 0) {
+            $("#fontStyle").val("Normal")
+        } else {
+            if (a.bold == 1) {
+                $("#fontStyle").val("Bold");
+                $("#sampletext").css("font-weight", "Bold")
+            } else {
+                if (a.italic == 1) {
+                    $("#fontStyle").val("Italic");
+                    $("#sampletext").css("font-style", "Italic")
+                }
+            }
+        }
+        if (a.underline == 1) {
+            document.getElementById("underline").checked = true
+        } else {
+            document.getElementById("underline").checked = false
+        }
+        if (a.strikeOut == 1) {
+            document.getElementById("strikeOut").checked = true
+        } else {
+            document.getElementById("strikeOut").checked = false
+        }
+        $("#sampletext").css("font-family", "'" + a.fontName + "'");
+        $("#sampletext").css("font-size", b + "px");
+        $("#backgroundColorProperties").slideUp();
+        $("#foreColorProperties").slideDown();
+        $("#fontProperties").slideDown();
+        $("#setPropertiesForAnnotation").slideDown();
+        $("#hyperlinkPropertyChange").slideUp();
+        break;
+    case "HLINK":
+        $("#thickness").hide();
+        document.getElementById("ForeColorSelection").color.fromString(a.fill);
+        $("#fontName").val(a.fontName);
+        b = parseInt(a.fontSize);
+        $("#fontSize").val(b);
+        $("#sampletext").css("font-style", "Normal");
+        $("#sampletext").css("font-weight", "Normal");
+        if (a.bold === 0 && a.italic === 0) {
+            $("#fontStyle").val("Normal")
+        } else {
+            if (a.bold == 1) {
+                $("#fontStyle").val("Bold");
+                $("#sampletext").css("font-weight", "Bold")
+            } else {
+                if (a.italic == 1) {
+                    $("#fontStyle").val("Italic");
+                    $("#sampletext").css("font-style", "Italic")
+                }
+            }
+        }
+        if (a.underline == 1) {
+            document.getElementById("underline").checked = true
+        } else {
+            document.getElementById("underline").checked = false
+        }
+        if (a.strikeOut == 1) {
+            document.getElementById("strikeOut").checked = true
+        } else {
+            document.getElementById("strikeOut").checked = false
+        }
+        $("#sampletext").css("font-family", "'" + a.fontName + "'");
+        $("#sampletext").css("font-size", b + "px");
+        document.getElementById("hyperLinkEditName").value = a.displayText;
+        document.getElementById("hyperLinkEditURL").value = a.linkId;
+        $("#backgroundColorProperties").slideUp();
+        $("#foreColorProperties").slideDown();
+        $("#fontProperties").slideDown();
+        $("#setPropertiesForAnnotation").slideDown();
+        $("#hyperlinkPropertyChange").slideDown();
+        break
+    }
+};
+ViewerManager.prototype.undo = function () {
+    if (0 === this.undoList.length || document.getElementById("annotCanvas").style.visibility == "hidden") {
+        return
+    }
+    if ($("#menu_undo").hasClass("ui-state-disabled")) {
+        return
+    }
+    var a = this.undoList.pop();
+    switch (a.operationType) {
+    case OPERATION_TYPE.ADD_NEW_ANNOTATION:
+        this.AnnotationManager.undoAddAnnotation(a);
+        break;
+    case OPERATION_TYPE.MOVE_ANNOTATION:
+        this.AnnotationManager.undoMoveAnnotation(a);
+        break;
+    case OPERATION_TYPE.RESIZE_ANNOTATION:
+        this.AnnotationManager.undoResizeAnnotation(a);
+        break;
+    case OPERATION_TYPE.DELETE_ANNOTATION:
+        this.AnnotationManager.undoDeleteAnnotation(a);
+        break;
+    case OPERATION_TYPE.PROPERTIES_CHANGE:
+        this.AnnotationManager.undoPropertiesChange(a);
+        break;
+    case OPERATION_TYPE.CUT_ANNOTATION:
+        this.AnnotationManager.undoCutAnnotation(a);
+        break;
+    case OPERATION_TYPE.PASTE_ANNOTATION:
+        this.AnnotationManager.undoPasteAnnotation(a);
+        break;
+    default:
+        Logger.log(Logger.INFO, "Undefined Undo");
+        break
+    }
+    this.redoList.push(a);
+    this.AnnotationManager.change = true;
+    if (0 === this.undoList.length) {
+        UTIL.disableButton(IDMAP.li_undo_transformation)
+    }
+    if (1 == this.redoList.length) {
+        UTIL.enableButton(IDMAP.li_redo_transformation)
+    }
+    this.AnnotationManager.drawImmediate()
+};
+ViewerManager.prototype.redo = function () {
+    if (0 === this.redoList.length || document.getElementById("annotCanvas").style.visibility == "hidden") {
+        return
+    }
+    if ($("#menu_redo").hasClass("ui-state-disabled")) {
+        return
+    }
+    var a = this.redoList.pop();
+    this.undoList.push(a);
+    switch (a.operationType) {
+    case OPERATION_TYPE.ADD_NEW_ANNOTATION:
+        this.AnnotationManager.redoAddAnnotation(a);
+        break;
+    case OPERATION_TYPE.MOVE_ANNOTATION:
+        this.AnnotationManager.redoMoveAnnotation(a);
+        break;
+    case OPERATION_TYPE.RESIZE_ANNOTATION:
+        this.AnnotationManager.redoResizeAnnotation(a);
+        break;
+    case OPERATION_TYPE.DELETE_ANNOTATION:
+        this.AnnotationManager.redoDeleteAnnotation(a);
+        break;
+    case OPERATION_TYPE.PROPERTIES_CHANGE:
+        this.AnnotationManager.redoPropertiesChange(a);
+        break;
+    case OPERATION_TYPE.CUT_ANNOTATION:
+        this.AnnotationManager.redoCutAnnotation(a);
+        break;
+    case OPERATION_TYPE.PASTE_ANNOTATION:
+        this.AnnotationManager.redoPasteAnnotation(a);
+        break;
+    default:
+        Logger.log(Logger.INFO, "Undefined Redo");
+        break
+    }
+    this.AnnotationManager.change = true;
+    if (0 === this.redoList.length) {
+        UTIL.disableButton(IDMAP.li_redo_transformation)
+    }
+    if (1 == this.undoList.length) {
+        UTIL.enableButton(IDMAP.li_undo_transformation)
+    }
+    this.AnnotationManager.drawImmediate()
+};
+ViewerManager.prototype.undoAll = function () {
+    if ($("#menu_undo_all").hasClass("ui-state-disabled") || document.getElementById("annotCanvas").style.visibility == "hidden") {
+        return
+    }
+    var b = this.undoList.length;
+    for (var a = 0; a <= b; a++) {
+        this.undo()
+    }
+};
+ViewerManager.prototype.redoAll = function () {
+    if ($("#menu_redo_all").hasClass("ui-state-disabled") || document.getElementById("annotCanvas").style.visibility == "hidden") {
+        return
+    }
+    var b = this.redoList.length;
+    for (var a = 0; a <= b; a++) {
+        this.redo()
+    }
+};
+ViewerManager.prototype.addToOperationsList = function (a) {
+    $("#edit").css("pointer-events", "auto");
+    this.undoList.push(a);
+    if (1 == this.undoList.length) {
+        DOM.edit.style.opacity = 1;
+        UTIL.enableButton(IDMAP.li_undo_transformation)
+    }
+};
+ViewerManager.prototype.toggleAnnotationDisplay = function () {
+    if (this.bAnnotationVisible) {
+        document.getElementById("annotCanvas").style.visibility = "hidden";
+        this.bAnnotationVisible = false;
+        document.getElementById("menu_display_annotation").innerHTML = MENUBAR.menu_hide_annotation ? MENUBAR.menu_hide_annotation : "Display Annotations";
+        document.getElementById("hideAnnotationIcon").style.display = "none";
+        document.getElementById("showAnnotationIcon").style.display = "block";
+        document.getElementById("toolbar_hide_show_annotation").setAttribute("title", STANDARD_TOOLBAR.show_annotation)
+    } else {
+        document.getElementById("annotCanvas").style.visibility = "visible";
+        this.bAnnotationVisible = true;
+        document.getElementById("menu_display_annotation").innerHTML = MENUBAR.menu_display_annotation ? MENUBAR.menu_display_annotation : "Hide Annotations";
+        this.AnnotationManager.ShowAnnotation();
+        document.getElementById("hideAnnotationIcon").style.display = "block";
+        document.getElementById("showAnnotationIcon").style.display = "none";
+        document.getElementById("toolbar_hide_show_annotation").setAttribute("title", STANDARD_TOOLBAR.hide_annotation)
+    }
+};
+ViewerManager.prototype.OnChangeInDropDownList = function () {
+    var f = document.getElementById("fontName");
+    var a = document.getElementById("fontSize");
+    var c = document.getElementById("fontStyle");
+    var b = f.options[f.selectedIndex].value;
+    var e = parseInt(a.options[a.selectedIndex].value, 10);
+    var d = c.options[c.selectedIndex].value;
+    document.getElementById("sampletext").style.fontFamily = "'" + b + "'";
+    if ((d === "Italic") || (d === "Normal")) {
+        (document.getElementById("sampletext")).style.fontStyle = d;
+        document.getElementById("sampletext").style.fontWeight = "Normal"
+    } else {
+        if ((d === "Bold")) {
+            document.getElementById("sampletext").style.fontWeight = "Bold"
+        }
+    }
+    document.getElementById("sampletext").style.fontSize = e + "px"
+};
+ViewerManager.prototype.IncreaseBrightness = function () {
+    if (!isImagePDF) {
+        return
+    }
+    if (this.brightnessLevel <= 26) {
+        this.brightnessLevel++;
+        document.body.style.cursor = "wait";
+        UTIL.disableEvents();
+        this.allPagesBrightness[this.CurrentPage - 1] = this.brightnessLevel;
+        setTimeout(function () {
+            VIEWER_MANAGER.renderPage(null, false);
+            document.body.style.cursor = "default";
+            UTIL.enableEvents()
+        }, 15)
+    }
+};
+ViewerManager.prototype.DecreaseBrightness = function () {
+    if (!isImagePDF) {
+        return
+    }
+    if (this.brightnessLevel >= -26) {
+        this.brightnessLevel--;
+        document.body.style.cursor = "wait";
+        UTIL.disableEvents();
+        this.allPagesBrightness[this.CurrentPage - 1] = this.brightnessLevel;
+        setTimeout(function () {
+            VIEWER_MANAGER.renderPage(null, false);
+            document.body.style.cursor = "default";
+            UTIL.enableEvents()
+        }, 15)
+    }
+};
+ViewerManager.prototype.sleep = function (a) {
+    var c = new Date().getTime();
+    for (var b = 0; b < 10000000; b++) {
+        if ((new Date().getTime() - c) > a) {
+            break
+        }
+    }
+};
+ViewerManager.prototype.ShowChangedBrightness = function (e, h) {
+    var b = e.getContext("2d");
+    var d = b.getImageData(0, 0, e.width, e.height);
+    var g = e.width;
+    var a = e.height;
+    $("#imageCanvas").hide();
+    for (var f = 0; f < a; f++) {
+        for (var c = 0; c < g * 4; c = c + 4) {
+            d.data[f * g * 4 + c] = d.data[f * g * 4 + c] + (h * 10);
+            d.data[f * g * 4 + c + 1] = d.data[f * g * 4 + c + 1] + (h * 10);
+            d.data[f * g * 4 + c + 2] = d.data[f * g * 4 + c + 2] + (h * 10);
+            d.data[f * g * 4 + c + 3] = d.data[f * g * 4 + c + 3] + (h * 10)
+        }
+    }
+    $("#imageCanvas").show();
+    b.putImageData(d, 0, 0)
+};
+ViewerManager.prototype.print = function (a) {
+    if (null == this.printingManager) {
+        this.printingManager = new PrintHolder(this, a)
+    }
+    this.printingManager.ui = a;
+    this.printingManager.showPrintDialog()
+};
+ViewerManager.prototype.setDateFormat = function (a) {
+    this.DateTimeFormat = parseInt(a, 10)
+};
+ViewerManager.prototype.setBackground = function (a) {
+    $(".wrapper").css("background-color", a)
+};
+ViewerManager.prototype.prepareAnnotationgroupList = function () {
+    var d = document.getElementById("annotationGroupList");
+    this.removeOptions(d);
+    var c = this.AnnotationManager.totalGroups;
+    for (var b = 0; b < c; b++) {
+        var e = this.AnnotationManager.groupList[b].name;
+        var a = document.createElement("OPTION");
+        a.text = e;
+        a.value = e;
+        d.appendChild(a);
+        if (this.AnnotationManager.currentGroupName == this.AnnotationManager.groupList[b].name) {
+            d.options[b].selected = true
+        }
+    }
+};
+ViewerManager.prototype.SaveImageTransformations = function (a) {};
+ViewerManager.prototype.OpenNotesWindow = function (b) {
+    try {
+        if (this.m_Notes !== "") {
+            var a = this.getRequestedPageURL(b, this.m_Notes);
+            var d = null;
+            if ("post" == this.RequestMethod.toLowerCase()) {
+                d = this.openWindowPost(a)
+            } else {
+                d = window.open(a, "Notes")
+            }
+            d.focus()
+        }
+    } catch (c) {
+        Logger.log(Logger.ERROR, "error while opening notes window " + c)
+    }
+};
+ViewerManager.prototype.removeOptions = function (a) {
+    var b;
+    for (b = a.options.length - 1; b >= 0; b--) {
+        a.remove(b)
+    }
+};
+ViewerManager.prototype.OpenHelpWindow = function () {
+    if (this.urlHelpFile !== "") {
+        var a = window.open(this.urlHelpFile, "Help");
+        a.focus()
+    }
+};
+ViewerManager.prototype.OpenSecureAnnotWindow = function () {
+    if (typeof parent.secureAnnotationCallback === "function") {
+        parent.secureAnnotationCallback()
+    } else {
+        if (this.SecureAnnotationURL !== "") {
+            var a = this.getRequestedPageURL(this.CurrentPage, this.SecureAnnotationURL);
+            var e = new XMLHttpRequest();
+            var f = a.split("?");
+            if (VIEWER_MANAGER.RequestMethod == "POST") {
+                e.open(VIEWER_MANAGER.RequestMethod.toLowerCase(), f[0], true)
+            } else {
+                e.open(VIEWER_MANAGER.RequestMethod.toLowerCase(), a, true)
+            }
+            if (VIEWER_MANAGER.urlRequestHeaderData) {
+                for (var c in VIEWER_MANAGER.urlRequestHeaderData) {
+                    var b = VIEWER_MANAGER.urlRequestHeaderData[c];
+                    if (typeof b === "undefined") {
+                        continue
+                    }
+                    e.setRequestHeader(c, b)
+                }
+            }
+            if (f[1] != null && VIEWER_MANAGER.RequestMethod.toLowerCase() == "post") {
+                e.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                e.send(f[1])
+            } else {
+                e.send()
+            }
+            var d = window.open(a, "Secure");
+            d.focus()
+        }
+    }
+};
+ViewerManager.prototype.SetPasswordForStamp = function (a) {};
+ViewerManager.prototype.createDialog = function () {
+    var a = $("#confirmationDialogs").dialog({
+        autoOpen: true,
+        height: 200,
+        width: 350,
+        modal: true,
+        buttons: {
+            Ok: function () {
+                a.dialog("close");
+                this.value = true;
+                this.Ok_Called = true;
+                opallAlert(OPALL_ICONS.INFO.id, "true")
+            },
+            Cancel: function () {
+                a.dialog("close");
+                this.Cancel_Called = true;
+                this.value = false;
+                opallAlert(OPALL_ICONS.ERROR.id, "false")
+            }
+        }
+    })
+};
+ViewerManager.prototype.sync_ajax_postcall = function (c, b) {
+    var a = false;
+    $.ajax({
+        async: false,
+        url: c,
+        data: b,
+        processData: false,
+        type: "POST",
+        success: function (d) {
+            a = d
+        },
+        error: function (d) {
+            console.dir(d)
+        }
+    });
+    return a
+};
+ViewerManager.prototype.convertDataURIToBinary = function (b) {
+    var c = ";base64,";
+    var e = b.indexOf(c) + c.length;
+    var a = b.substring(e);
+    var d = window.atob(a);
+    var f = d.length;
+    var g = new Uint8Array(new ArrayBuffer(f));
+    for (let i = 0; i < f; i++) {
+        g[i] = d.charCodeAt(i)
+    }
+    return g
+};
+ViewerManager.prototype.HandlePageLoadError = function (b) {
+    ShowLoadingBanner(false, "");
+    var e = PAGE_DISPLAY_STATUS.ERROR_DOC_LOAD;
+    if (b) {
+        if (b.name == "InvalidPDFException") {
+            var d = PDFJS.urlFetchedData;
+            if (typeof PDFJS.urlFetchedData !== "string" && typeof PDFJS.urlFetchedData !== "undefined") {
+                var c = new Uint8Array(PDFJS.urlFetchedData);
+                d = "";
+                for (var a = 0; a < c.byteLength; a++) {
+                    d += String.fromCharCode(c[a])
+                }
+            }
+            PDFJS.urlFetchedData = undefined;
+            opallAlert(OPALL_ICONS.ERROR.id, d ? d : OPALL_ERR_MESSAGE.InvalidFileStreamErrMsg);
+            e = PAGE_DISPLAY_STATUS.ERROR_DOC_NOTPDF
+        } else {
+            if (b.message && (b.message.indexOf("need either .data") != -1)) {
+                opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.ImageSourceEmptyErrMsg);
+                e = PAGE_DISPLAY_STATUS.ERROR_DOC_NULLURL
+            } else {
+                if (b.message && ((b.message.indexOf("stream must have data") != -1) || b.name.indexOf("MissingPDF") >= 0)) {
+                    opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.DataNullErrorMsg || "No document data received from server");
+                    e = PAGE_DISPLAY_STATUS.ERROR_DOC_NULLDATA
+                } else {
+                    if ((typeof b == "string" ? b : b.message).indexOf("annotation") != -1) {
+                        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.AnnotationLoadErrorMsg);
+                        e = PAGE_DISPLAY_STATUS.ERROR_ANNOT_FETCH
+                    } else {
+                        if (b.message && b.message.indexOf("password") != -1) {
+                            opallAlert(OPALL_ICONS.ERROR.id, b.message);
+                            e = PAGE_DISPLAY_STATUS.ERROR_DOC_NULLPASSWORD
+                        } else {
+                            if (typeof b == "string") {
+                                opallAlert(OPALL_ICONS.ERROR.id, b)
+                            } else {
+                                opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.PageLoadErrMsg)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.PageLoadErrMsg)
+    }
+    DisplayPageNumber(this.CurrentPage);
+    this.PageRequested = this.CurrentPage;
+    if (typeof parent.opall && typeof parent.opall.viewerCallback == "function") {
+        parent.opall.viewerCallback(e, parent.opall.viewerCallbackParam);
+        parent.opall.viewerCallback = "";
+        parent.opall.viewerCallbackParam = ""
+    }
+    hideLoadBar();
+    document.getElementById("bothCanvas").style.display = "block";
+    UTIL.setCss("#menu_print", {
+        pointerEvents: "none"
+    }, true);
+    if (TOOLKIT.showPageQueue.isProcessing()) {
+        TOOLKIT.showPageQueue.endProcessing()
+    }
+    if (this.CurrentPage && typeof b != "string") {
+        UTIL.enableEvents(isImagePDF)
+    } else {
+        ["#li_previous_page", "#li_first_page", "#li_next_page", "#li_last_page", "#li_print"].forEach(function (f) {
+            UTIL.setCss(f, {
+                pointerEvents: "none"
+            })
+        });
+        UTIL.setCss("#li_totalPages", {
+            pointerEvents: "none"
+        }, true)
+    }
+};
+ViewerManager.prototype.loadStampImage = function (a) {
+    this.PdfManager.loadStampPDFImage(a)
+};
+ViewerManager.prototype.clearStamps = function () {
+    this.PdfManager.stampPDFDocument = null;
+    this.AnnotationManager.selectedTxtStampID = -1;
+    this.AnnotationManager.selectedImgStampID = -1
+};
+ViewerManager.prototype.HandleStampLoadError = function (a) {
+    Logger.log(Logger.INFO, OPALL_ERR_MESSAGE.StampImageLoadErrorMsg);
+    this.AnnotationManager.canvas.style.cursor = "default"
+};
+ViewerManager.prototype.getCurrentZoom = function () {
+    var a = 0;
+    var d = 0;
+    var e = document.getElementById("zoomDropList").value;
+    for (var c = 0; c < RESIZE_PERCENTAGES.length; c++) {
+        if (e == (RESIZE_PERCENTAGES[c] + "%")) {
+            a = c;
+            d = 0;
+            break
+        }
+    }
+    e = e.split(" ");
+    e = e.join("");
+    if (c >= RESIZE_PERCENTAGES.length) {
+        for (var b = 0; b < RESIZE_OPTIONS.length; b++) {
+            if (e == RESIZE_OPTIONS[b]) {
+                a = 0;
+                d = b
+            }
+        }
+    }
+    return {
+        resizeOption: d,
+        resizePercentage: a
+    }
+};
+ViewerManager.prototype.resetImageOperations = function () {
+    this.currentVector = [1, 2, 1];
+    if (this.bRetainAngleSettings || this.Angle) {
+        var b = Math.round(Math.sin(this.Angle * Math.PI / 180));
+        var a = Math.round(Math.cos(this.Angle * Math.PI / 180));
+        this.currentVector = this.matrixMultiply([a, -b, b, a, 0, 0], this.currentVector)
+    }
+    this.operationList = [];
+    this.bDeskewed = false;
+    this.horizontallyFlipped = false;
+    this.verticallyFlipped = false;
+    this.brightnessLevel = 0;
+    CanvasUtil.detectSkewAngle.DeskewMode = "FINE"
+};
+ViewerManager.prototype.getRotatedCanvas = function (e, f) {
+    var c;
+    var a;
+    var b = document.createElement("canvas");
+    var d = b.getContext("2d");
+    d.save();
+    if (f === 0 || f == 360) {
+        return e
+    }
+    if (f == 90) {
+        b.width = e.height;
+        b.height = e.width;
+        c = 0;
+        a = -e.height;
+        d.rotate(90 * Math.PI / 180);
+        d.drawImage(e, 0, 0, e.width, e.height, c, a, b.height, b.width)
+    } else {
+        if (f == 180) {
+            b.width = e.width;
+            b.height = e.height;
+            c = -e.width;
+            a = -e.height;
+            d.rotate(180 * Math.PI / 180);
+            d.drawImage(e, 0, 0, e.width, e.height, c, a, b.width, b.height)
+        } else {
+            if (f == 270) {
+                b.width = e.height;
+                b.height = e.width;
+                c = -e.width;
+                a = 0;
+                d.rotate(270 * Math.PI / 180);
+                d.drawImage(e, 0, 0, e.width, e.height, c, a, b.height, b.width)
+            }
+        }
+    }
+    d.restore();
+    return b
+};
+ViewerManager.prototype.showhideAnnotion = function (a) {
+    if (this.AnnotationOption === 0) {
+        if (a === true) {
+            document.getElementById("annotCanvas").style.visibility = "visible";
+            document.getElementById("annotate").style.opacity = 1;
+            document.getElementById("annotate").style.pointerEvents = "auto"
+        } else {
+            document.getElementById("annotCanvas").style.visibility = "hidden";
+            document.getElementById("annotate").style.opacity = 0.4;
+            document.getElementById("annotate").style.pointerEvents = "none"
+        }
+    }
+};
+function showDialog(l) {
+    var a = notify(l);
+    if (a == -1) {
+        return
+    }
+    bDialogOpen = true;
+    dialogOpened.push(l);
+    if (l != "#ZoomLens") {
+        UTIL.disableEvents()
+    }
+    var e = parseInt($(l).css("top"), 10);
+    var m = parseInt($(l).css("left"), 10);
+    var n = parseInt($(l).css("height"), 10);
+    var p = parseInt($(l).css("width"), 10);
+    var k = parseInt($("#viewArea").position().top, 10);
+    var b = parseInt($("#viewArea").position().left, 10);
+    var f = parseInt($("#viewArea").css("height"), 10);
+    var c = parseInt($("#viewArea").css("width"), 10);
+    var j = parseInt($("#viewArea").css("border-left-width"), 10);
+    var o = parseInt($("#viewArea").css("border-top-width"), 10);
+    var d = parseInt($("body").css("margin-left"), 10);
+    var h = parseInt($("body").css("margin-top"), 10);
+    c = c + b;
+    f = f + k;
+    var g = d + m + p;
+    if (g > c) {
+        m = m - (g - c) - d
+    }
+    if (m < b) {
+        m = b + j
+    }
+    g = h + e + n;
+    if (g > f) {
+        e = e - (g - f) - h
+    }
+    if (e < k) {
+        e = k + o
+    }
+    if (l == "#ZoomLens") {
+        e = e - k;
+        m = m - b
+    }
+    if (l == "#PropertiesDialog" || l == "#CustomZoomDialog" || l == "#hyperLinkDialog" || l == "#annotationGroupDialog") {
+        m = (c + b - p) / 2;
+        e = (f + k - n) / 2
+    }
+    $(l).css("top", e);
+    $(l).css("left", m);
+    $(l).css("display", "block");
+    VIEWER_MANAGER.invokeButton = document.activeElement.id;
+    if (VIEWER_MANAGER.invokeButton == "toolbar_hyperlink" || VIEWER_MANAGER.invokeButton == "toolbar_delete_group" || VIEWER_MANAGER.invokeButton == "toolbar_select_group" || VIEWER_MANAGER.invokeButton == "toolbar_create_group" || VIEWER_MANAGER.invokeButton == "menu_create_group_li" || VIEWER_MANAGER.invokeButton == "menu_set_group_li" || VIEWER_MANAGER.invokeButton == "menu_delete_group_li" || VIEWER_MANAGER.invokeButton == "menu_draw_hyperlink_li") {
+        VIEWER_MANAGER.tempinvokeButton = VIEWER_MANAGER.invokeButton
+    }
+    $(l).focus()
+}
+function hideDialog(a) {
+    var e = [];
+    var b = dialogOpened.length;
+    var c;
+    for (var d = 0; d < b; d++) {
+        c = dialogOpened.pop();
+        if (a != c) {
+            e.push(c)
+        }
+    }
+    b = e.length;
+    for (d = 0; d < b; d++) {
+        dialogOpened.push(e.pop())
+    }
+    if (dialogOpened.length === 0) {
+        bDialogOpen = false
+    }
+    if (a != "#ZoomLens") {
+        UTIL.enableEvents(isImagePDF)
+    }
+    $(a).css("display", "none");
+    if (VIEWER_MANAGER.invokeMenu) {
+        document.getElementById(VIEWER_MANAGER.invokeMenu).focus()
+    } else {
+        if (VIEWER_MANAGER.invokeButton) {
+            if (VIEWER_MANAGER.invokeButton == "hyperlinkOk" && a == "#alertModal") {
+                document.getElementById("hyperLinkDialog").focus();
+                VIEWER_MANAGER.invokeButton = VIEWER_MANAGER.tempinvokeButton
+            } else {
+                if (VIEWER_MANAGER.invokeButton == "annotate") {
+                    document.getElementById("annotate").focus()
+                } else {
+                    if (VIEWER_MANAGER.invokeButton == "onOkAnnotationGroup" && a == "#alertModal") {
+                        document.getElementById("annotationGroupDialog").focus();
+                        VIEWER_MANAGER.invokeButton = VIEWER_MANAGER.tempinvokeButton
+                    } else {
+                        if (a == "#annotationGroupDialog" || VIEWER_MANAGER.invokeButton == "toolbar_create_group" || VIEWER_MANAGER.invokeButton == "toolbar_delete_group" || VIEWER_MANAGER.invokeButton == "toolbar_select_group") {
+                            document.getElementById("toolbar_annotation_group").focus()
+                        } else {
+                            if (VIEWER_MANAGER.invokeButton == "zoomDropList") {
+                                document.getElementById("textZoom").focus();
+                                let zoomList = document.getElementById("zoomDropList");
+                                zoomList.selectedIndex = -1
+                            } else {
+                                document.getElementById(VIEWER_MANAGER.invokeButton).focus()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (a == "#sign_verify_dialog") {
+        document.getElementById("toolbar_verifySignature").focus()
+    }
+    if (a == "#hyperLinkDialog") {
+        VIEWER_MANAGER.ID = a;
+        return
+    }
+    if (a == "#attachNote") {
+        VIEWER_MANAGER.ID = a;
+        return
+    }
+    if (a == "#annotationGroupDialog") {
+        VIEWER_MANAGER.ID = a;
+        return
+    }
+    VIEWER_MANAGER.invokeButton = null;
+    VIEWER_MANAGER.invokeMenu = null
+}
+function showContextMenu() {
+    var k = "#contextMenu";
+    var d = parseInt($(k).css("top"), 10);
+    var l = parseInt($(k).css("left"), 10);
+    var o = parseInt($(k).css("width"), 10);
+    var j = parseInt($("#viewArea").position().top, 10);
+    var a = parseInt($("#viewArea").position().left, 10);
+    var e = parseInt($("#viewArea").css("height"), 10);
+    var b = parseInt($("#viewArea").css("width"), 10);
+    var h = parseInt($("#viewArea").css("border-left-width"), 10);
+    var n = parseInt($("#viewArea").css("border-top-width"), 10);
+    var c = parseInt($("body").css("margin-left"), 10);
+    var g = parseInt($("body").css("margin-top"), 10);
+    b = b + a;
+    e = e + j;
+    var f = l + o;
+    if (f > b) {
+        l = l - o - c
+    }
+    if (l < a) {
+        l = a + h
+    }
+    $(k).css("left", l);
+    $(k).show();
+    var m = parseInt($(k).css("height"), 10);
+    f = d + m;
+    if (f > e) {
+        d = d - m
+    }
+    if (d < j) {
+        d = j + n
+    }
+    $(k).css("top", d);
+    document.getElementById("viewArea").addEventListener("mousewheel", wrapperMouseWheel);
+    UTILS.adjustVertToolbars("#Menu", "#contextMenu", 0, "rgba(255, 255, 255, 0.5)")
+}
+function hideContextMenu() {
+    $("#contextMenu").hide();
+    document.getElementById("viewArea").removeEventListener("mousewheel", wrapperMouseWheel)
+}
+function wrapperMouseWheel() {
+    return false
+}
+function notify(a) {
+    var b = {
+        fileWidth: 177,
+        editWidth: 138,
+        zoomWidth: 177,
+        transformWidth: 166,
+        annotateWidth: 160,
+        helpWidth: 100
+    };
+    var d = $(window).width();
+    var f = 0;
+    var c = parseInt($(a).css("left"), 10);
+    var e = parseInt($(a).css("width"), 10);
+    var g;
+    let IDDisplayFlag = "true";
+    switch (a) {
+    case "#file_menu_list":
+        g = parseInt($("#file").offset().left, 10);
+        if ((d < f + g + b.fileWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#file_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#file").width() - b.fileWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#file_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        VIEWER_MANAGER.invokeMenu = "file";
+        break;
+    case "#edit_menu_list":
+        g = parseInt($("#edit").offset().left, 10);
+        if ((d < f + g + b.editWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#edit_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#edit").width() - b.editWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#edit_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        break;
+    case "#zoom_menu_list":
+        g = parseInt($("#zoom").offset().left, 10);
+        if ((d < f + g + b.zoomWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#zoom_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#zoom").width() - b.zoomWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#zoom_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        VIEWER_MANAGER.invokeMenu = "zoom";
+        break;
+    case "#transform_menu_list":
+        g = parseInt($("#transform").offset().left, 10);
+        if ((d < f + g + b.transformWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#transform_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#transform").width() - b.transformWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#transform_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        break;
+    case "#annotate_menu_list":
+        g = parseInt($("#annotate").offset().left, 10);
+        if ((d < f + g + b.annotateWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#annotate_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#annotate").width() - b.annotateWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#annotate_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        VIEWER_MANAGER.invokeMenu = "annotate";
+        break;
+    case "#help_menu_list":
+        g = parseInt($("#help").offset().left, 10);
+        if ((d < f + g + b.helpWidth) && ("ltr" == VIEWER_MANAGER.localeDirection)) {
+            if ($("#help_menu_list").css("display") != "block" && parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return
+            }
+        } else {
+            if ((g + parseInt($("#help").width() - b.helpWidth) < 0) && ("rtl" == VIEWER_MANAGER.localeDirection)) {
+                if ($("#help_menu_list").css("display") != "block" && parent.opall) {
+                    if (parent.callbackInsufficientWindowSize) {
+                        parent.callbackInsufficientWindowSize()
+                    }
+                    return
+                }
+            }
+        }
+        break;
+    case "#attachNote":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#annotationGroupDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#CustomZoomDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#hyperLinkDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#PropertiesDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#annotationPropertiesDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#PrintDialog":
+        if (d < e) {
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#TxtStampListContainer":
+        if (d < f + $("#TxtStampListContainer").offset().left + $("#TxtStampListContainer").width()) {
+            DrawTextStamp.visible = false;
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    case "#ImgStampListContainer":
+        if (d < f + $("#ImgStampListContainer").offset().left + $("#ImgStampListContainer").width()) {
+            DrawTextStamp.visible = false;
+            if (parent.opall) {
+                if (parent.callbackInsufficientWindowSize) {
+                    parent.callbackInsufficientWindowSize()
+                }
+                return -1
+            }
+        }
+        break;
+    default:
+        break
+    }
+    if (a.indexOf("menu") > -1) {
+        if (document.getElementById(a.substring(1)).style.display != "none") {
+            IDDisplayFlag = "false"
+        }
+        $(a).fadeToggle("fast");
+        UTILS.adjustVertToolbars(a + ">ul", a, 0, "rgba(255, 255, 255, 0.5)");
+        if (a == "#edit_menu_list") {
+            if (VIEWER_MANAGER.AnnotationManager.selection.length > 1) {
+                $("#menu_cut_annotation_li").addClass("ui-state-disabled");
+                $("#menu_copy_annotation_li").addClass("ui-state-disabled");
+                $("#menu_paste_annotation_li").addClass("ui-state-disabled");
+                $("#menu_delete_annotation_li").removeClass("ui-state-disabled")
+            } else {
+                if (VIEWER_MANAGER.AnnotationManager.selection.length == 1) {
+                    $("#menu_cut_annotation_li").removeClass("ui-state-disabled");
+                    $("#menu_copy_annotation_li").removeClass("ui-state-disabled");
+                    $("#menu_delete_annotation_li").removeClass("ui-state-disabled");
+                    $("#menu_paste_annotation_li").addClass("ui-state-disabled")
+                } else {
+                    $("#menu_delete_annotation_li").addClass("ui-state-disabled");
+                    $("#menu_copy_annotation_li").addClass("ui-state-disabled");
+                    $("#menu_cut_annotation_li").addClass("ui-state-disabled")
+                }
+            }
+            if (VIEWER_MANAGER.AnnotationManager.selection.length == 0) {
+                if (VIEWER_MANAGER.AnnotationManager.isAnnotationOnClipBoard == false) {
+                    $("#menu_copy_annotation_li").addClass("ui-state-disabled");
+                    $("#menu_cut_annotation_li").addClass("ui-state-disabled");
+                    $("#menu_paste_annotation_li").addClass("ui-state-disabled")
+                } else {
+                    if (VIEWER_MANAGER.AnnotationManager.isAnnotationOnClipBoard == false) {
+                        $("#menu_paste_annotation_li").addClass("ui-state-disabled")
+                    } else {
+                        $("#menu_paste_annotation_li").removeClass("ui-state-disabled")
+                    }
+                }
+            }
+            if (VIEWER_MANAGER.undoList.length == 0) {
+                $("#menu_undo_li").addClass("ui-state-disabled");
+                $("#menu_undo_all_li").addClass("ui-state-disabled")
+            } else {
+                $("#menu_undo_li").removeClass("ui-state-disabled");
+                $("#menu_undo_all_li").removeClass("ui-state-disabled")
+            }
+            if (VIEWER_MANAGER.redoList.length == 0) {
+                $("#menu_redo_li").addClass("ui-state-disabled");
+                $("#menu_redo_all_li").addClass("ui-state-disabled")
+            } else {
+                $("#menu_redo_li").removeClass("ui-state-disabled");
+                $("#menu_redo_all_li").removeClass("ui-state-disabled")
+            }
+            if (VIEWER_MANAGER.AnnotationManager.annotationList.length == 0) {
+                $("#menu_select_all_li").addClass("ui-state-disabled")
+            } else {
+                $("#menu_select_all_li").removeClass("ui-state-disabled")
+            }
+        }
+    }
+    let menu_list_ids = ["#file_menu_list", "#edit_menu_list", "#zoom_menu_list", "#transform_menu_list", "#annotate_menu_list", "#help_menu_list"];
+    if (menu_list_ids.indexOf(a) != -1) {
+        document.getElementById(a.substring(1)).setAttribute("aria-expanded", IDDisplayFlag)
+    }
+}
+ViewerManager.prototype.changeZoomHandler = function (e) {
+    this.previousZoomValue = document.getElementById("textZoom").value;
+    this.prevZoomIndex = 0;
+    var b = document.getElementById("zoomDropList");
+    for (var d = 0; d < b.length; d++) {
+        if (this.previousZoomValue === b[d].textContent) {
+            this.previousZoomIndex = this.prevZoomIndex = d;
+            break
+        }
+    }
+    var a = b.selectedIndex;
+    if ((this.prevZoomIndex != a) || (a === 0)) {
+        var c = document.getElementById("zoomDropList").options[a].textContent;
+        SetZoomPercentage(c)
+    }
+    if ("Custom..." === b.value) {
+        b.selectedIndex = -1
+    }
+    b.blur();
+    document.getElementById("textZoom").blur();
+    document.getElementById("bothCanvas").blur();
+    if ("" != b.value) {
+        document.getElementById("zoomDropList").focus()
+    }
+};
+ViewerManager.prototype.openLocalFile = function (a) {
+    window.iStartTime = performance.now();
+    var c = "";
+    if (document.getElementById("docName").files[0]) {
+        c = document.getElementById("docName").files[0];
+        document.getElementById("docName").value = "";
+        c = URL.createObjectURL(c)
+    }
+    if (c || a) {
+        showLoadBar();
+        this.openLocalFile.displayLocalFile = this.displayLocalFile;
+        this.openLocalFile.stampImageURL = this.stampImageURL;
+        this.openLocalFile.url_WriteAnnotation = this.url_WriteAnnotation;
+        this.openLocalFile.INIPath = this.INIPath;
+        this.openLocalFile.StampINIPath = this.StampINIPath;
+        this.openLocalFile.StampFile = this.StampFile;
+        this.openLocalFile.bAnnotationDisplay = this.bAnnotationDisplay;
+        this.openLocalFile.noNavYet = this.noNavYet;
+        this.openLocalFile.CurrentPage = this.CurrentPage;
+        this.openLocalFile.StartPage = this.StartPage;
+        this.openLocalFile.ServerSupportMultiPage = this.ServerSupportMultiPage;
+        this.openLocalFile.ImageFileName = this.ImageFileName;
+        this.openLocalFile.AnnotationData = VIEWER_MANAGER.AnnotationManager.annotationData;
+        this.displayLocalFile = true;
+        this.stampImageURL = "";
+        this.url_WriteAnnotation = "";
+        this.INIPath = "";
+        this.StampINIPath = "";
+        this.StampFile = "";
+        this.bAnnotationDisplay = false;
+        this.noNavYet = true;
+        this.textLayerManager.clearState();
+        this.CurrentPage = -1;
+        this.StartPage = 1;
+        this.ServerSupportMultiPage = false;
+        if (typeof a == "string") {
+            c = a;
+            a = undefined
+        }
+        var b = this;
+        if (a) {
+            this.showDocument(new Uint8Array(a));
+            return
+        }
+        this.ImageFileName = c;
+        UTIL.xhrPromise(this.ImageFileName, {
+            method: "get",
+            responseType: "arraybuffer"
+        }).then(function (d) {
+            var e = UTIL.getFileFormat(d);
+            d = new Uint8Array(d);
+            if (e == FILE_FORMAT.PDF) {
+                b.showDocument(d);
+                b.resetDigiSignState();
+                return
+            }
+            if (b.WASMBrowserSupport && (e == FILE_FORMAT.BMP || e == FILE_FORMAT.JPEG || e == FILE_FORMAT.TIFF || e == FILE_FORMAT.JBIG2)) {
+                let pdfdata = WASM_API.convertToPDF(d);
+                if (pdfdata) {
+                    b.showDocument(pdfdata);
+                    b.resetDigiSignState()
+                } else {
+                    if (b.URL_ConvertToPDF) {
+                        b.localConvertToPDF(d)
+                    } else {
+                        b.openLocalFileError(OPALL_ERR_MESSAGE.FileConversionErrorMsg)
+                    }
+                }
+                return
+            }
+            if (b.URL_ConvertToPDF) {
+                b.localConvertToPDF(d);
+                return
+            }
+            b.openLocalFileError(OPALL_ERR_MESSAGE.FileFormatNotSupportedErrorMsg)
+        }, function () {
+            b.openLocalFileError(OPALL_ERR_MESSAGE.FileReadErrorMsg)
+        })
+    }
+};
+ViewerManager.prototype.setPreviousFileSetting = function () {
+    VIEWER_MANAGER.displayLocalFile = VIEWER_MANAGER.openLocalFile.displayLocalFile;
+    VIEWER_MANAGER.stampImageURL = VIEWER_MANAGER.openLocalFile.stampImageURL;
+    VIEWER_MANAGER.url_WriteAnnotation = VIEWER_MANAGER.openLocalFile.url_WriteAnnotation;
+    VIEWER_MANAGER.INIPath = VIEWER_MANAGER.openLocalFile.INIPath;
+    VIEWER_MANAGER.StampINIPath = VIEWER_MANAGER.openLocalFile.StampINIPath;
+    VIEWER_MANAGER.StampFile = VIEWER_MANAGER.openLocalFile.StampFile;
+    VIEWER_MANAGER.bAnnotationDisplay = VIEWER_MANAGER.openLocalFile.bAnnotationDisplay;
+    VIEWER_MANAGER.noNavYet = VIEWER_MANAGER.openLocalFile.noNavYet;
+    VIEWER_MANAGER.CurrentPage = VIEWER_MANAGER.openLocalFile.CurrentPage;
+    VIEWER_MANAGER.StartPage = VIEWER_MANAGER.openLocalFile.StartPage;
+    VIEWER_MANAGER.ServerSupportMultiPage = VIEWER_MANAGER.openLocalFile.ServerSupportMultiPage;
+    VIEWER_MANAGER.ImageFileName = VIEWER_MANAGER.openLocalFile.ImageFileName;
+    VIEWER_MANAGER.AnnotationManager.annotationData = VIEWER_MANAGER.openLocalFile.annotationData
+};
+ViewerManager.prototype.showDocument = function (b) {
+    var a = this;
+    var c = this.docFactory.getDocumentObject(b);
+    c.then(function (d) {
+        if (b.docType === "PDF" && b.url !== null) {
+            a.document = d
+        }
+    })
+};
+ViewerManager.prototype.isTextLayerApplicable = function () {
+    if (this.isAnnotationDisplayed()) {
+        this.PdfManager.renderTextLayer(this.ZoomFactor, this.Angle);
+        DOM.textLayer.style.display = "block"
+    } else {
+        DOM.textLayer.style.display = "none"
+    }
+};
+ViewerManager.prototype.performImageOperation = function (a, d) {
+    var c = [];
+    var b;
+    for (b in IMAGE_OPERATION) {
+        c[IMAGE_OPERATION[b]] = 0
+    }
+    for (b = 0; b < d.length; b++) {
+        c[d[b]]++
+    }
+    if (c[IMAGE_OPERATION.IMAGE_NEGATED] % 2) {
+        a = Invert(a)
+    }
+    if (c[IMAGE_OPERATION.IMAGE_FLIPPED_HORIZONTALLY] % 2) {
+        a = horizontalFlip(a)
+    }
+    if (c[IMAGE_OPERATION.IMAGE_FLIPPED_VERTICALLY] % 2) {
+        a = verticalFlip(a)
+    }
+    return a
+};
+ViewerManager.prototype.isAnnotationDisplayed = function () {
+    if ((1 === this.currentVector[0]) && (2 === this.currentVector[1]) && this.bAnnotationVisible) {
+        return true
+    } else {
+        return false
+    }
+};
+ViewerManager.prototype.matrixMultiply = function (b, a) {
+    return [b[0] * a[0] + b[2] * a[1] + b[4] * a[2], b[1] * a[0] + b[3] * a[1] + b[5] * a[2], a[2]]
+};
+ViewerManager.prototype.getTransformations = function (a) {
+    var b = {
+        rotate: 0,
+        hFlip: false,
+        vFlip: false
+    };
+    var c = a.toString();
+    switch (c) {
+    case "1,2,1":
+        break;
+    case "1,-2,1":
+        b.vFlip = true;
+        break;
+    case "-1,2,1":
+        b.hFlip = true;
+        break;
+    case "-1,-2,1":
+        b.rotate = 180;
+        break;
+    case "2,1,1":
+        b.rotate = 90;
+        b.hFlip = true;
+        break;
+    case "2,-1,1":
+        b.rotate = 90;
+        break;
+    case "-2,1,1":
+        b.rotate = 270;
+        break;
+    case "-2,-1,1":
+        b.rotate = 90;
+        b.vFlip = true;
+        break
+    }
+    return b
+};
+ViewerManager.prototype.applyCurrentTransformation = function (b) {
+    var a = this.getTransformations(this.currentVector);
+    this.applyTransformation(a, b)
+};
+ViewerManager.prototype.applyTransformation = function (b, a) {
+    if (b.hFlip) {
+        CanvasUtil.horizontalFlip(a)
+    }
+    if (b.vFlip) {
+        CanvasUtil.verticalFlip(a)
+    }
+    if (0 !== b.rotate) {
+        CanvasUtil.rotate(a, b.rotate)
+    }
+};
+function dataUriToBlob(b) {
+    var e;
+    if (b.split(",")[0].indexOf("base64") >= 0) {
+        e = atob(b.split(",")[1])
+    } else {
+        e = unescape(b.split(",")[1])
+    }
+    var a = b.split(",")[0].split(":")[1].split(";")[0];
+    var d = [];
+    for (var c = 0; c < e.length; c++) {
+        d.push(e.charCodeAt(c))
+    }
+    return new Blob([new Uint8Array(d)], {
+        type: a
+    })
+}
+ViewerManager.prototype.extractTransformations = function (e) {
+    var c = (e.intentStates.display || e.intentStates.print).operatorList;
+    var b = {
+        rotate: 0,
+        hFlip: false,
+        vFlip: false,
+        isImagePDF: true
+    };
+    var l = [1, 2, 1];
+    var a = true;
+    for (var h = 0; h < c.fnArray.length; h++) {
+        if (12 === c.fnArray[h]) {
+            var m = c.argsArray[h];
+            if (m[4] !== 0 || m[5] !== 0) {
+                b.isImagePDF = false;
+                break
+            }
+            var j = (0 === m[0] && 0 === m[3]);
+            var f = (0 === m[1] && 0 === m[2]);
+            var d = ((m[1] === -m[2]) && (1 === Math.abs(m[1]) || 0 === m[1]));
+            if (a) {
+                d = d || (Math.abs(m[1]) > 1 && Math.abs(m[2]) > 1)
+            }
+            a = false;
+            var k = [];
+            k[0] = (0 === m[0] ? 0 : m[0] > 0 ? 1 : -1);
+            k[1] = (0 === m[1] ? 0 : m[1] > 0 ? 1 : -1);
+            k[2] = (0 === m[2] ? 0 : m[2] > 0 ? 1 : -1);
+            k[3] = (0 === m[3] ? 0 : m[3] > 0 ? 1 : -1);
+            k[4] = k[5] = 0;
+            if ((j && k[1] !== k[2] && d) || f) {
+                l = this.matrixMultiply(k, l)
+            } else {
+                b.isImagePDF = false;
+                break
+            }
+        }
+    }
+    var g = this.getTransformations(l);
+    b.rotate = g.rotate;
+    b.hFlip = g.hFlip;
+    b.vFlip = g.vFlip;
+    return b
+};
+ViewerManager.prototype.getCurrentTransformations = function () {
+    var a = TOOLKIT.getSaveActions().split(",");
+    var b = 0;
+    var c = {
+        rotate: 0,
+        hflip: false,
+        vflip: false,
+        negate: false
+    };
+    for (b = 0; b < a.length; b++) {
+        switch (a[b]) {
+        case "1":
+            c.rotate += 90;
+            break;
+        case "2":
+            c.rotate += -90;
+            break;
+        case "3":
+            c.rotate += 180;
+            break;
+        case "4":
+            c.negate = !c.negate;
+            break;
+        case "5":
+            c.hflip = !c.hflip;
+            break;
+        case "6":
+            c.vflip = !c.vflip;
+            break;
+        default:
+            break
+        }
+    }
+    c.rotate %= 360;
+    return c
+};
+ViewerManager.prototype.parseThemeObject = function (b) {
+    var a = {
+        "1": {
+            toolbar_background: "#f2f2f2",
+            icon_selection: "#0d5b9c",
+            icon_selection_color: "#ffffff",
+            icon_hover_background_color: "rgba(18, 129, 221, 0.25)",
+            icon_border: "rgba(0,0,0,1)",
+            dialog_header_background_color: "#0d5b9c",
+            dialog_header_color: "white",
+            button_color: "#444",
+            button_background_color: "#f3f3f3",
+            button_hover_color: "white",
+            button_hover_background_color: "#1281dd",
+            viewer_border_color: "#cccccc"
+        }
+    };
+    if ("object" != typeof b) {
+        opallAlert(OPALL_ICONS.WARNING.id, "Invalid theme object");
+        return
+    }
+    var c = {};
+    switch (b.id) {
+    case 1:
+        var e = 0,
+        d;
+        for (e = 0; e < Object.keys(a[b.id]).length; e++) {
+            d = Object.keys(a[b.id])[e];
+            c[d] = b[d] || a[b.id][d]
+        }
+        break;
+    case undefined:
+        for (e = 0; e < Object.keys(a[1]).length; e++) {
+            d = Object.keys(a[1])[e];
+            if (!b[d]) {
+                opallAlert(OPALL_ICONS.WARNING.id, OPALL_MESSAGE.InvalidThemeObject || "Invalid theme object, missing theme properties");
+                c = a[0];
+                break
+            }
+        }
+        c = b;
+        break;
+    default:
+        opallAlert(OPALL_ICONS.WARNING.id, OPALL_MESSAGE.InvalidThemeId || "Invalid theme id");
+        return false
+    }
+    document.styleSheets[0].insertRule(".toolbar_icon_selected { background-color:" + c.icon_selection + "!important;border-color:" + c.icon_border + ";color:" + c.icon_selection_color + "!important;}", 0);
+    return c
+};
+ViewerManager.prototype.validateURLContext = function (a) {
+    if (0 === this.ImageFileName.indexOf("blob:") || "" == a) {
+        return true
+    }
+    if (0 == a.indexOf(CONTEXTPATH) || 0 == a.indexOf(RELATIVECONTEXTPATH)) {
+        return true
+    }
+    return false
+};
+ViewerManager.prototype.validateAllURLContext = function () {
+    var b = [this.ImageFileName, this.INIPath, this.StampINIPath, this.StampFile, this.URL_ConvertToPDF, this.urlHelpFile, this.m_Notes, this.url_WriteAnnotation, this.URL_saveImageTransformations, this.SecureAnnotationURL, this.stampServletURL, PARAM.url_config_propertyfile, PARAM.url_i18n_propertyfile, this.url_VerifyDigitalSignature];
+    for (var a = 0; a < b.length; a++) {
+        if (!this.validateURLContext(b[a])) {
+            Logger.log(Logger.ERROR, b[a]);
+            return false
+        }
+    }
+    return true
+};
+ViewerManager.prototype.mapPointToCurrentView = function (a) {
+    a.x *= (this.ImageCanvas.width / this.ImageInfo.ImageWidth);
+    a.y *= (this.ImageCanvas.height / this.ImageInfo.ImageHeight);
+    return a
+};
+ViewerManager.prototype.hideRegionsofDocument = function (e, a) {
+    var k = this.hideRegion.regions.length;
+    for (var g = 0; g < k; g++) {
+        var h = this.hideRegion.regions[g].split(",");
+        var d = (h[0] * e.width) / 100;
+        var l = (h[1] * e.height) / 100;
+        var c = (h[2] * e.width) / 100;
+        var n = (h[3] * e.height) / 100;
+        if ((d + c) > e.width) {
+            c = e.width - d
+        }
+        if ((l + n) > e.height) {
+            n = e.height - l
+        }
+        var b = e.getContext("2d");
+        b.save();
+        b.fillStyle = this.hideRegion.color;
+        if (h[4] === "false") {
+            for (var f = 5; f < h.length; f++) {
+                var m = parseInt(h[f], 10);
+                if (isNaN(m)) {
+                    Logger.log(Logger.ERROR, "incorrect page number ie " + h[f])
+                }
+                if (m === a) {
+                    b.fillRect(d, l, c, n);
+                    break
+                }
+            }
+        } else {
+            b.fillRect(d, l, c, n)
+        }
+        b.restore()
+    }
+};
+ViewerManager.prototype.parseHideRegions = function (m) {
+    if ("object" != typeof m && Array.isArray(m.regions)) {
+        opallAlert(OPALL_ICONS.WARNING.id, "Invalid hideRegion object");
+        return -1
+    }
+    var g = {};
+    g.regions = [];
+    g.color = "#000000";
+    var c = m.regions.length;
+    for (var f = 0; f < c; f++) {
+        var h = m.regions[f];
+        var j = h.split(",");
+        var d = parseInt(j[0], 10);
+        var a = parseInt(j[1], 10);
+        var l = parseInt(j[2], 10);
+        var b = parseInt(j[3], 10);
+        var k = j[4] ? j[4].toLowerCase() : undefined;
+        if (isNaN(d) || d < 0 || d > 100) {
+            Logger.log(Logger.ERROR, "starting X coordinate value is not correct ie " + j[0] + " for " + f + " region");
+            continue
+        }
+        if (isNaN(a) || a < 0 || a > 100) {
+            Logger.log(Logger.ERROR, "starting Y coordinate value is not correct ie " + j[1] + " for " + f + " region");
+            continue
+        }
+        if (isNaN(l) || l < 0 || l > 100) {
+            Logger.log(Logger.ERROR, "width percentage value is not correct ie " + j[2] + " for " + f + " region");
+            continue
+        }
+        if (isNaN(b) || b < 0 || b > 100) {
+            Logger.log(Logger.ERROR, "height percentage value is not correct ie " + j[3] + " for " + f + " region");
+            continue
+        }
+        if (k != "true" && k != "false") {
+            k = "true";
+            Logger.log(Logger.ERROR, "Flag to select all page or not is not correct ie " + j[4] + " for " + f + " region")
+        }
+        j[0] = d;
+        j[1] = a;
+        j[2] = l;
+        j[3] = b;
+        j[4] = k;
+        g.regions.push(j.toString())
+    }
+    var e = parseInt(m.color);
+    g.color = "#000000";
+    if (!isNaN(e)) {
+        g.color = "#" + this.AnnotationManager.ConvertToHexadecimal(e)
+    } else {
+        Logger.log(Logger.ERROR, "color value is not correct, black color will be used")
+    }
+    return g
+};
+ViewerManager.prototype.openFile = function () {
+    var a = DOM.docName;
+    a.click()
+};
+ViewerManager.prototype.openWindowPost = function (a) {
+    function d(p) {
+        var o = p.indexOf("?");
+        var m = new Array();
+        if (o == -1) {
+            return m
+        }
+        var q = p.substring(o + 1, p.length);
+        if (q.length > 0) {
+            var k = q.split("&");
+            for (var l = 0; l < k.length; l++) {
+                var r = k[l].split("=");
+                try {
+                    m.push(new Array(c(r[0]), c(r[1])))
+                } catch (n) {}
+            }
+        }
+        return m
+    }
+    function c(l) {
+        var k = l.replace(/\+/g, " ");
+        k = decodeURIComponent(k);
+        return k
+    }
+    var h = a.indexOf("?");
+    var e = a;
+    if (-1 != h) {
+        e = a.substring(0, h)
+    }
+    var j = d(a);
+    var g = window.open("", "Notes");
+    g.document.write("<HTML><HEAD><TITLE></TITLE></HEAD><BODY>");
+    g.document.write("<form id='postSubmit' method='post' action='" + e + "' enctype='application/x-www-form-urlencoded'>");
+    for (var f = 0; f < j.length; f++) {
+        var b = j[f];
+        g.document.write("<input type='hidden' id='" + b[0] + "' name='" + b[0] + "'/>");
+        g.document.getElementById(b[0]).value = b[1]
+    }
+    g.document.write("</FORM></BODY></HTML>");
+    g.document.close();
+    g.document.forms[0].submit();
+    return g
+};
+ViewerManager.prototype.getView = function () {
+    var a = [0, 0, 0, 0, 0, 0, 0, 0];
+    a[0] = parseInt(VIEWER_MANAGER.ImageCanvas.style.left, 10);
+    a[1] = parseInt(VIEWER_MANAGER.ImageCanvas.style.top, 10);
+    if (isNaN(a[0])) {
+        a[0] = 0
+    }
+    if (isNaN(a[1])) {
+        a[1] = 0
+    }
+    if (DOM.viewArea.scrollLeft > 0) {
+        if (0 == a[0]) {
+            a[0] = DOM.viewArea.scrollLeft
+        }
+        a[2] = a[0] + DOM.viewArea.clientWidth
+    } else {
+        a[2] = Math.min(DOM.viewArea.clientWidth, this.ImageCanvas.dataset.width)
+    }
+    if (DOM.viewArea.scrollTop > 0) {
+        if (0 == a[1]) {
+            a[1] = DOM.viewArea.scrollTop
+        }
+        a[3] = a[1] + DOM.viewArea.clientHeight
+    } else {
+        a[3] = Math.min(DOM.viewArea.clientHeight, this.ImageCanvas.dataset.height)
+    }
+    a[6] = this.ImageCanvas.dataset.width;
+    a[7] = this.ImageCanvas.dataset.height;
+    return a
+};
+ViewerManager.prototype.mapViewAfterZoom = function (a) {
+    var c = this.ImageCanvas.dataset.width / a[6];
+    var b = this.ImageCanvas.dataset.height / a[7];
+    a[0] *= c;
+    a[2] *= c;
+    a[1] *= b;
+    a[3] *= b;
+    if (this.bSinglePageScrollMode) {}
+    else {
+        DOM.viewArea.scrollLeft = (a[0] + a[2] - Math.min(DOM.viewArea.clientWidth, this.ImageCanvas.dataset.width)) / 2;
+        DOM.viewArea.scrollTop = (a[1] + a[3] - Math.min(DOM.viewArea.clientHeight, this.ImageCanvas.dataset.height)) / 2
+    }
+};
+ViewerManager.prototype.mapViewAfterScroll = function (f, e) {
+    if (this.bSinglePageScrollMode) {}
+    else {
+        var o = document.getElementById("viewArea");
+        if (f + o.clientWidth > o.scrollWidth) {
+            f = o.scrollWidth - o.clientWidth
+        }
+        if (e + o.clientHeight > o.scrollHeight) {
+            e = o.scrollHeight - o.clientHeight
+        }
+        var n = this.ZoomFactor * (this.ScreenDPI / this.ImageInfo.Xdpi);
+        var k = this.ZoomFactor * (this.ScreenDPI / this.ImageInfo.Ydpi);
+        if (!isImagePDF) {
+            n /= this.PdfManager.vectorZoom;
+            k /= this.PdfManager.vectorZoom
+        }
+        var d = this.getCurrentTransformations();
+        var b = Math.floor(o.scrollLeft / n);
+        var a = Math.floor(o.scrollTop / k);
+        var m = o.clientWidth;
+        var l = o.clientHeight;
+        if (90 == Math.abs(d.rotate) || 270 == Math.abs(d.rotate)) {
+            c = l / k;
+            p = m / n;
+            m = o.clientHeight;
+            l = o.clientWidth;
+            this.ImageCanvas.width = this.AnnotationCanvas.width = m;
+            this.ImageCanvas.height = this.AnnotationCanvas.height = l
+        }
+        var c = m / n;
+        var p = l / k;
+        var g = this.PdfManager.savedImage;
+        var q = this.ImageCanvas.getContext("2d");
+        var j = this.scanAnnotCanvs;
+        var r = this.AnnotationCanvas.getContext("2d");
+        if (180 == Math.abs(d.rotate)) {
+            b = g.width - b - c;
+            a = g.height - a - p
+        }
+        var h = null;
+        if (90 == d.rotate || -270 == d.rotate) {
+            h = b;
+            b = a;
+            a = g.height - h - p
+        }
+        if (-90 == d.rotate || 270 == d.rotate) {
+            h = b;
+            b = g.width - a - c;
+            a = h
+        }
+        if (o.scrollLeft + o.clientWidth <= o.scrollWidth || o.scrollTop + o.clientHeight <= o.scrollHeight) {
+            q.clearRect(0, 0, m, l);
+            q.drawImage(g, b, a, c, p, 0, 0, m, l);
+            r.clearRect(0, 0, m, l);
+            r.drawImage(j, b, a, c, p, 0, 0, m, l);
+            this.ImageCanvas.style.left = this.AnnotationCanvas.style.left = f + "px";
+            this.ImageCanvas.style.top = this.AnnotationCanvas.style.top = e + "px"
+        }
+        this.applyCurrentTransformation(this.ImageCanvas);
+        this.applyCurrentTransformation(this.AnnotationCanvas)
+    }
+};
+ViewerManager.prototype.addWaterMarkOnCanvas = function (c, d, b) {
+    var e = new PrintHolder(this, null);
+    var a = 1118;
+    if ((c.height >= a) || !isImagePDF) {
+        var f = e.Water_Properties[4];
+        e.Water_Properties[4] = e.Water_Properties[4] * (c.height / a);
+        e.DrawWaterMark(c, this.TextWaterMarkPosition, d, b);
+        e.Water_Properties[4] = f
+    } else {
+        e.DrawWaterMark(c, this.TextWaterMarkPosition, d, b)
+    }
+};
+ViewerManager.prototype.ViewSearchDialog = function () {
+    VIEWER_MANAGER.bSearchEnabled = true;
+    var e = Math.floor(window.innerWidth) - 1;
+    var a = Math.floor(window.innerHeight) - 1;
+    var d = UTIL.getOuterWidth("viewArea");
+    var b = UTIL.getOuterHeight("viewArea");
+    if (VIEWER_MANAGER.bMenuBar == true) {
+        b += UTIL.getTotalHeight("menu")
+    }
+    var f = VIEWER_MANAGER.bNewToolbar ? "annotation_toolbar" : "AnnotationToolbar";
+    var c = VIEWER_MANAGER.bNewToolbar ? "transformation_toolbar" : "TransformationToolbar";
+    if (VIEWER_MANAGER.localeDirection == "ltr") {
+        if (VIEWER_MANAGER.annotToolbar_Alignment != "east") {
+            DOM.search.style.left = e - 36 - d - parseInt($("#search").css("width"), 10) + "px"
+        } else {
+            DOM.search.style.left = e - 70 - d - parseInt($("#search").css("width"), 10) + "px"
+        }
+    } else {
+        if (!VIEWER_MANAGER.bNewToolbar && VIEWER_MANAGER.annotToolbar_Alignment != "west" && DOM[f].style.display != "none" && DOM[f].style.display != "") {
+            DOM.search.style.left = "53px"
+        } else {
+            DOM.search.style.left = "29px"
+        }
+    }
+    DOM.search.style.display = "block";
+    DOM.search.style.visibility = "visible";
+    DOM.searchStr.focus()
+};
+ViewerManager.prototype.updateViewArea = function () {
+    if ("block" != DOM.pageNumber.style.display) {
+        DOM.pageNumber.style.display = "block"
+    }
+    var p = parseInt(DOM.viewArea.style.height, 10);
+    var u = parseInt(DOM.viewArea.style.width, 10);
+    var j = DOM.viewArea;
+    var l = j.clientHeight;
+    var f = j.scrollTop;
+    var k = document.getElementById("docView");
+    var h = this.ImageCanvas.height;
+    if (this.ImageCanvas.width < u) {
+        if (h < p) {
+            h = p;
+            k.style.backgroundColor = "transparent"
+        } else {
+            k.style.backgroundColor = "white"
+        }
+    }
+    var d = k.clientHeight;
+    var q = h * this.NumberOfPages;
+    k.style.width = this.ImageCanvas.width + "px";
+    k.style.height = q + "px";
+    var e = q / d;
+    var s = (l - SCROLL.height * 2) / f;
+    var o = 2;
+    if (s * l < SCROLL.height) {
+        o = 3
+    }
+    var v = (l - SCROLL.height * o) / (DOM.docView.clientHeight);
+    var t = v * f;
+    var m = j.getBoundingClientRect().top + 19;
+    t += m;
+    if ("" == DOM.pageNumber.style.top) {
+        DOM.pageNumber.style.top = t + "px"
+    }
+    DOM.pageNumber.innerHTML = this.CurrentPage;
+    var a = this.ImageCanvas.height;
+    var c = h * (this.CurrentPage - 1);
+    if (this.zoomChange && this.previousZoomFactor != this.ZoomFactor) {
+        Logger.log(Logger.INFO, "zoom change");
+        if (l > this.ImageCanvas.height) {
+            j.scrollTop = j.clientHeight * (this.CurrentPage - 1);
+            DOM.bothCanvas.style.top = (this.CurrentPage - 1) * j.clientHeight + ((j.clientHeight - a) / 2) + "px"
+        } else {
+            var b = (j.scrollTop + (l / 2)) * e;
+            var g = b - (j.clientHeight / 2);
+            if (g < c) {
+                g = c
+            }
+            j.scrollTop = g;
+            DOM.bothCanvas.style.top = (this.CurrentPage - 1) * h + "px"
+        }
+    } else {
+        if (l > a) {
+            j.scrollTop = l * (this.CurrentPage - 1);
+            DOM.bothCanvas.style.top = (this.CurrentPage - 1) * h + ((l - a) / 2) + "px"
+        } else {
+            if (window.scrollUP || (this.CurrentPage - this.PreviousPage < 0)) {
+                var r = l - (a * this.CurrentPage - j.scrollTop);
+                var n = l;
+                if (window.scrollEvent) {
+                    if (j.scrollTop + n > c + a) {
+                        j.scrollTop -= r;
+                        scrollTop = j.scrollTop
+                    }
+                } else {
+                    j.scrollTop = c
+                }
+            } else {
+                if (j.scrollTop < c) {
+                    j.scrollTop = c;
+                    scrollTop = c
+                }
+            }
+            window.scrollEvent = false;
+            DOM.bothCanvas.style.top = c + "px";
+            window.scrollUP = false
+        }
+    }
+    this.zoomChange = false;
+    DOM.pageNumber.innerHTML = VIEWER_MANAGER.CurrentPage
+};
+ViewerManager.prototype.resetDigiSignState = function () {
+    this.url_VerifyDigitalSignature = "";
+    this.bPDFDigiSignEnable = true;
+    this.PdfManager.documentLoaded = false;
+    this.PdfManager.digitalSignature = {
+        bPresent: false,
+        bVerified: false,
+        dsigs: {}
+    };
+    document.getElementById("toolbar_verify_signature").src = "../images/sign_not_found.svg";
+    document.getElementById("toolbar_verifySignature").setAttribute("title", STANDARD_TOOLBAR.verifySignature || "No digital signature is found");
+    document.getElementById("toolbar_verify_signature").alt = IMAGE_ALTS.toolbar_verify_signature;
+    document.getElementById("notification").style.display = "none"
+};
+ViewerManager.prototype.showDocument = function (a) {
+    this.docData = a;
+    this.AnnotationManager.annotationData = [];
+    DOM.viewArea.scrollTop = 0;
+    DOM.viewArea.scrollLeft = 0;
+    this.ShowPage(1)
+};
+ViewerManager.prototype.openLocalFileError = function (a) {
+    hideLoadBar();
+    opallAlert(OPALL_ICONS.ERROR.id, a);
+    VIEWER_MANAGER.setPreviousFileSetting()
+};
+ViewerManager.prototype.localConvertToPDF = function (a) {
+    let self = this;
+    let dataToSend = a;
+    if (self.bLocalFileMultipartSupport) {
+        dataToSend = new FormData();
+        dataToSend.append("userfile", new Blob([data], {
+                type: "application/x-www-form-urlencoded"
+            }))
+    }
+    UTIL.xhrPromise(self.URL_ConvertToPDF, {
+        method: "post",
+        bformData: self.bLocalFileMultipartSupport,
+        responseType: "arraybuffer",
+        urlHeaderData: "set"
+    }, {
+        data: dataToSend
+    }).then(function (b) {
+        b = new Uint8Array(b);
+        self.showDocument(b);
+        self.resetDigiSignState()
+    }, function (b) {
+        self.openLocalFileError(OPALL_ERR_MESSAGE.FileConversionErrorMsg)
+    })
+};
+ViewerManager.prototype.load_WASM_SSM = function (c, a) {
+    let self = this;
+    if (self.printFlag == false) {
+        ShowLoadingBanner(true, OPALL_MESSAGE.Loading)
+    }
+    let imageFileUrl = c;
+    if (self.RequestMethod.toLowerCase() == "post") {
+        let paramLen = self.ImageFileName.indexOf("?");
+        var e = paramLen !== -1 ? c.substr(paramLen + 1) : null;
+        if (e != null) {
+            imageFileUrl = self.ImageFileName.split("?")[0]
+        }
+    }
+    var f;
+    var d;
+    var b;
+    UTIL.xhrPromise(imageFileUrl, {
+        method: self.RequestMethod.toLowerCase(),
+        responseType: "arraybuffer",
+        urlHeaderData: "set"
+    }, {
+        data: e
+    }).then(function (h) {
+        var k = UTIL.getFileFormat(h);
+        h = new Uint8Array(h);
+        if (k == FILE_FORMAT.PDF) {
+            self.docData = h;
+            if (self.printFlag == false) {
+                self.PdfManager.loadPDF(self.Self)
+            } else {
+                PDFJS.getDocument(self.docData, f, d, b, OPALL_INTENT_TYPE.PRINT).then(function j(l) {
+                    var m = l;
+                    VIEWER_MANAGER.printingManager.RenderPages(m, a)
+                }, ErrorCallBack)
+            }
+        } else {
+            if ((k == FILE_FORMAT.BMP || k == FILE_FORMAT.JPEG || k == FILE_FORMAT.TIFF || k == FILE_FORMAT.JBIG2) && self.WASMBrowserSupport) {
+                let pdfdata = WASM_API.convertToPDF(h);
+                if (pdfdata) {
+                    self.docData = pdfdata;
+                    if (self.printFlag == false) {
+                        self.PdfManager.loadPDF(self.Self)
+                    } else {
+                        PDFJS.getDocument(self.docData, f, d, b, OPALL_INTENT_TYPE.PRINT).then(function j(l) {
+                            var m = l;
+                            VIEWER_MANAGER.printingManager.RenderPages(m, a)
+                        }, ErrorCallBack)
+                    }
+                } else {
+                    if (self.URL_ConvertToPDF) {
+                        self.urlConvertToPDF(h, a)
+                    } else {
+                        ShowLoadingBanner(false, "");
+                        Logger.log(Logger.ERROR, "URL_ConvertToPDF parameter is empty");
+                        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.FileConversionErrorMsg)
+                    }
+                }
+            } else {
+                if (self.URL_ConvertToPDF) {
+                    self.urlConvertToPDF(h, a)
+                } else {
+                    ShowLoadingBanner(false, "");
+                    var g;
+                    if (window.XMLHttpRequest) {
+                        g = new XMLHttpRequest()
+                    } else {
+                        g = new ActiveXObject("Microsoft.XMLHTTP")
+                    }
+                    g.open("GET", imageFileUrl, false);
+                    g.send();
+                    if (g.status === 404) {
+                        Logger.log(Logger.ERROR, "Issue with url_ImageFileName");
+                        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.FileReadErrorMsg)
+                    } else {
+                        Logger.log(Logger.ERROR, "file format not supported and URL_ConvertToPDF parameter is empty ");
+                        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.FileFormatNotSupportedErrorMsg)
+                    }
+                }
+            }
+        }
+    }, function (g) {
+        ShowLoadingBanner(false, "");
+        Logger.log(Logger.ERROR, "Issue with url_ImageFileName");
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.FileReadErrorMsg)
+    })
+};
+ViewerManager.prototype.urlConvertToPDF = function (e, a) {
+    let self = this;
+    var d;
+    var c;
+    var b;
+    UTIL.xhrPromise(self.URL_ConvertToPDF, {
+        method: "post",
+        responseType: "arraybuffer",
+        urlHeaderData: "set"
+    }, {
+        data: e
+    }).then(function (h) {
+        h = new Uint8Array(h);
+        VIEWER_MANAGER.docData = h;
+        if (self.printFlag == false) {
+            self.PdfManager.loadPDF(self.Self)
+        } else {
+            var k;
+            var g;
+            var f;
+            PDFJS.getDocument(self.docData, k, g, f, OPALL_INTENT_TYPE.PRINT).then(function j(l) {
+                var m = l;
+                VIEWER_MANAGER.printingManager.RenderPages(m, a)
+            }, ErrorCallBack)
+        }
+    }, function (f) {
+        ShowLoadingBanner(false, "");
+        Logger.log(Logger.ERROR, "URL_ConvertToPDF conversion failed");
+        opallAlert(OPALL_ICONS.ERROR.id, OPALL_ERR_MESSAGE.FileConversionErrorMsg)
+    })
+};
